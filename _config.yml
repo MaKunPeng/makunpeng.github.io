@@ -1,0 +1,32 @@
+# Site settings
+name: 马鲲鹏
+email: makunpeng1231@gmail.com
+author: Aaron Ma
+url: http://makunpeng.github.io
+resume_site: http://139.199.117.240
+github: https://github.com/MaKunPeng
+baseurl: "/LessOrMore"
+description: 凡物皆有可观
+meta_description: 马鲲鹏;个人博客;Computer Science;大数据;人工智能;随笔
+motto: "nosce te ipsum"
+banner: 此身合是诗人未？细雨骑驴入剑门。
+
+plugins: [jekyll-paginate]
+
+#permalink: /:categories/:year/:month/:day/:title/
+permalink: /:year/:month/:day/:title/
+paginate: 10
+
+exclude: ['README.md', 'Gemfile.lock', 'Gemfile', 'Rakefile']
+
+github_username: MaKunPeng
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+
+# kramdown:
+#   highlighter: pygments
+
+# baidu_analysis: 94be4b0f9fc5d94cc0d0415ea6761ae9
+
