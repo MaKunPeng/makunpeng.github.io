@@ -4,9 +4,9 @@
 # ---------------------------------------------------------------
 
 # Site
-title: Ma Kun Peng
-subtitle: "我们生于无知，而且一生中只有很少的时间来改变这种无知的状况。  —— 费曼"
-description: 子非我，安知我不知鱼之乐？<br>(,,• ₃ •,,)
+title: 马鲲鹏
+subtitle: "此身合是诗人未？细雨骑驴入剑门。"
+description: 计算机、文学、音乐。并不想写纯粹的technology blog，平淡的日子里总有比技术更值得记录的事情。<br/> 1033828046@qq.com
 author: 马鲲鹏
 # Support language: de, en, fr-FR, id, ja, ko, pt-BR, pt, ru, zh-Hans, zh-hk, zh-tw
 language: zh-Hans
@@ -79,7 +79,7 @@ plugins:
 favicon: /assets/favicon.png
 
 # Set default keywords (Use a comma to separate)
-keywords: "博客, 随笔, 大数据, 人工智能 "
+keywords: "随笔,计算机科学,软件工程"
 
 # Set rss to false to disable feed link.
 # Leave rss as empty to use site's feed link.
@@ -105,7 +105,7 @@ copyright: true
 canonical: true
 
 # Change headers hierarchy on site-subtitle (will be main site description) and on all post/pages titles for better SEO-optimization.
-seo: false
+seo: true
 
 # If true, will add site-subtitle to index page, added in jekyll config.
 # subtitle: Subtitle
@@ -265,7 +265,7 @@ sidebar:
   #  - always  expand for all pages automatically
   #  - hide    expand only when click on the sidebar toggle icon.
   #  - remove  Totally remove sidebar including sidebar toggle.
-  display: always
+  display: hide
   #display: always
   #display: hide
   #display: remove
