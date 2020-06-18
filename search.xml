@@ -1,107 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>Java多线程之ThreadLocal</title>
-    <url>/2017/12/24/2017-12-25-Java%E5%A4%9A%E7%BA%BF%E7%A8%8B%E4%B9%8BThreadLocal/</url>
-    <content><![CDATA[<blockquote>
-<p>ThreadLocal - 线程本地变量。顾名思义，ThreadLocal提供了线程内存储变量的能力，这些变量的不同之处在于针对不同的线程，它们各自读取的变量是对应于当前线程的，这些线程持有独立的变量副本，互不影响。通过get和set方法就可以得到当前线程对应的值。</p>
-<p>Spring声明式事务的重要实现基础就是ThreadLocal。</p>
-</blockquote>
-<h2 id="由线程不安全的SimpleDateFormat说起"><a href="#由线程不安全的SimpleDateFormat说起" class="headerlink" title="由线程不安全的SimpleDateFormat说起"></a>由线程不安全的SimpleDateFormat说起</h2><p>SimpleDateFormat是JDK提供的一个常用的日期格式化类，这个类不是线程安全的。如果在日期工具类中，将SimpleDateFormat初始化为一个静态变量以防止多次初始化，那么在并发情况下，调用方法进行格式化的结果可能会出现错误，甚至抛出异常。</p>
-<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><ol>
-<li>使用局部变量。局部变量是线程私有的，也就不存在线程安全问题。但这样每次调用时都需要初始化SimpleDateFormat，有性能开销。</li>
-<li>方法加同步锁synchronized。同步有性能开销，性能会受一定影响。</li>
-<li>使用ThreadLocal。阿里巴巴开发手册中推荐使用。</li>
-</ol>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// ThreadLocal解决方案代码</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 声明静态变量</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> ThreadLocal&lt;DateFormat&gt; DATE_FORMAT_TL = <span class="keyword">new</span> ThreadLocal&lt;DateFormat&gt;() &#123; </span><br><span class="line">    <span class="meta">@Override</span> </span><br><span class="line">    <span class="function"><span class="keyword">protected</span> DateFormat <span class="title">initialValue</span><span class="params">()</span> </span>&#123; </span><br><span class="line">    	<span class="keyword">return</span> <span class="keyword">new</span> SimpleDateFormat(<span class="string">"yyyy-MM-dd"</span>); </span><br><span class="line">    &#125; </span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 使用</span></span><br><span class="line">DateFormat df = DATE_FORMAT_TL.get();</span><br></pre></td></tr></table></figure>
-
-<p>使用上述代码，SimpleDateFormat被放入ThreadLocal中，每个线程在调用DATE_FORMAT_TL.get()时，都会从自己的线程本地存储中取变量，如果没有，就会执行initialValue创建一份，并存储在当前线程的本地存储中，下次调用时，当前线程可直接从本地存储中取出已经初始化好的SimpleDateFormat。</p>
-<h2 id="与局部变量的区别-聊聊应用场景"><a href="#与局部变量的区别-聊聊应用场景" class="headerlink" title="与局部变量的区别 - 聊聊应用场景"></a>与局部变量的区别 - 聊聊应用场景</h2><p>什么时候使用ThreadLocal呢？</p>
-<p>很多人将ThreadLocal的作用单一理解为将一个变量变为线程私有的，从而保证线程安全性，这是片面的，因为想做到这一点的话，使用局部变量就够了。局部变量存在于栈上，天生就是线程私有的，并且用起来还简单。</p>
-<p>他们是有很大区别的。</p>
-<p>首先，他们的生命周期不同，ThreadLocal的生命周期与线程相同（一般情况下，特殊情况在后面内存泄露一节会讨论），而局部变量的生命周期短的多，方法调用一结束，局部变量就在栈上销毁了。因此ThreadLocal既可以保证变量操作的线程安全性，也保证了同一线程在其生命周期内访问到的ThreadLocal是相同的，这也是SimpleDateFormat中ThreadLocal方案优于其他方案的原因，因为针对当前线程只需创建一次就够了。</p>
-<p>其次，局部变量只能应用于方法上，而ThreadLocal可以应用于类属性变量上。</p>
-<p><strong>存储单个线程上下文信息</strong></p>
-<p>Context类的实现方式之一。</p>
-<p><strong>保证类变量的线程安全</strong></p>
-<p>一般一个类的属性变量按照java内存模型的设计都属于共享内存（存放在堆中）。一旦涉及多线程编程。对这个变量的修改读取基本都是线程不安全。当然要想安全就要加锁synchonize 或者各种lock. 哪怕是号称线程安全的各种并发类比如ConcurrentHashMap。这种类说是线程安全只是针对ConcurrentHashMap自己的一次get 或者set操作。不意味着多次get set，或者一次get+set的操作。要想一整套get+set都是线程安全还是要加锁。</p>
-<p>这时可以使用ThreadLocal，每个线程存储一个变量副本，保证线程安全性。</p>
-<p><strong>简化参数传递</strong></p>
-<blockquote>
-<p>如果我想跟踪一个请求，从接收请求，处理到返回的整个流程，有没有好的办法?</p>
-<p>这其实就是线程内共享数据的问题。</p>
-</blockquote>
-<p>Threadlocal 可以做到传递参数。这是ThreadLocal的一个功能。很多人可能不知道，因为Threadlocal 是线程本地变量，只要线程不销毁，就会一直存在，因此可以使用Threadlocal来跟踪传递参数。</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 示例代码</span></span><br><span class="line"><span class="number">1</span> 定义一个类读写threadlocal变量</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ThreadAttributes</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">static</span> ThreadLocal&lt;Map&lt;String, Object&gt;&gt; threadAttribues = <span class="keyword">new</span> ThreadLocal&lt;Map&lt;String, Object&gt;&gt;() &#123;</span><br><span class="line">                <span class="function"><span class="keyword">protected</span> <span class="keyword">synchronized</span> Map&lt;String, Object&gt; <span class="title">initialValue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                        <span class="keyword">return</span> <span class="keyword">new</span> HashMap&lt;String, Object&gt;();</span><br><span class="line">                &#125;</span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Object <span class="title">getThreadAttribute</span><span class="params">(String name)</span> </span>&#123;</span><br><span class="line">                <span class="keyword">return</span> threadAttribues.get().get(name);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Object <span class="title">setThreadAttribute</span><span class="params">(String name, Object value)</span> </span>&#123;</span><br><span class="line">                <span class="keyword">return</span> threadAttribues.get().put(name, value);</span><br><span class="line"></span><br><span class="line">        &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="number">2</span> 在一个filter里写入request</span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">doFilter</span><span class="params">(ServletRequest req, ServletResponse resp,</span></span></span><br><span class="line"><span class="function"><span class="params">                        FilterChain chain)</span> <span class="keyword">throws</span> IOException, ServletException </span>&#123;</span><br><span class="line">                HttpServletRequest request = (HttpServletRequest) req;</span><br><span class="line">                HttpServletResponse response = (HttpServletResponse) resp;</span><br><span class="line">               </span><br><span class="line">                ThreadAttributes.setThreadAttribute(<span class="string">"request"</span>, req);</span><br><span class="line">        .....</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="number">3</span> 读取request</span><br><span class="line">HttpServletRequest request = (HttpServletRequest)ThreadAttributes.getThreadAttribute(<span class="string">"request"</span>);</span><br></pre></td></tr></table></figure>
-
-<h2 id="实现细节"><a href="#实现细节" class="headerlink" title="实现细节"></a>实现细节</h2><p>线程类Thread中有一个类属性，专门存放线程独立的变量。</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/* ThreadLocal values pertaining to this thread. This map is maintained</span></span><br><span class="line"><span class="comment"> * by the ThreadLocal class. */</span></span><br><span class="line">ThreadLocal.ThreadLocalMap threadLocals = <span class="keyword">null</span>;</span><br></pre></td></tr></table></figure>
-
-<p>ThreadLocal就是用来管理这个threadLocals属性的。也就是说我们对于<code>ThreadLocal</code>的get, set，remove的操作结果都是针对当前线程Thread实例的threadLocals存，取，删除操作。</p>
-<p><img src="/2017/12/24/2017-12-25-Java%E5%A4%9A%E7%BA%BF%E7%A8%8B%E4%B9%8BThreadLocal/image-20200407160341549.png" alt="image"></p>
-<p><strong>ThreadLocal的静态内部类ThreadLocalMap为每个Thread都维护了一个Entry数组，ThreadLocal确定了一个数组下标，而这个下标就是Entry的对应位置。</strong></p>
-<h2 id="潜在的内存泄露风险"><a href="#潜在的内存泄露风险" class="headerlink" title="潜在的内存泄露风险"></a>潜在的内存泄露风险</h2><p><strong>Memory leak:内存泄漏，程序申请内存后，无法释放已申请的内存空间，内存泄漏的堆积终将导致内存溢出。</strong></p>
-<h3 id="Java的引用类型"><a href="#Java的引用类型" class="headerlink" title="Java的引用类型"></a>Java的引用类型</h3><table>
-<thead>
-<tr>
-<th>类型</th>
-<th>回收时间</th>
-<th>应用场景</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>强引用</td>
-<td>一直存活，除非GC Roots不可达</td>
-<td>所有程序的场景，基本对象，自定义对象等</td>
-</tr>
-<tr>
-<td>软引用</td>
-<td>内存不足时会被回收</td>
-<td>一般用在对内存非常敏感的资源上，用作缓存的场景比较多，例如：网页缓存、图片缓存</td>
-</tr>
-<tr>
-<td>弱引用</td>
-<td>只能存活到下一次GC前</td>
-<td>生命周期很短的对象，例如ThreadLocal中的Key。</td>
-</tr>
-<tr>
-<td>虚引用</td>
-<td>随时会被回收， 创建了可能很快就会被回收</td>
-<td>可能被JVM团队内部用来跟踪JVM的垃圾回收活动</td>
-</tr>
-</tbody></table>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">* The entries in this hash map extend WeakReference, using</span></span><br><span class="line"><span class="comment">* its main ref field as the key (which is always a</span></span><br><span class="line"><span class="comment">* ThreadLocal object).  Note that null keys (i.e. entry.get()</span></span><br><span class="line"><span class="comment">* == null) mean that the key is no longer referenced, so the</span></span><br><span class="line"><span class="comment">* entry can be expunged from table.  Such entries are referred to</span></span><br><span class="line"><span class="comment">* as "stale entries" in the code that follows.</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Entry</span> <span class="keyword">extends</span> <span class="title">WeakReference</span>&lt;<span class="title">ThreadLocal</span>&gt; </span>&#123;</span><br><span class="line">    <span class="comment">/** The value associated with this ThreadLocal. */</span></span><br><span class="line">    Object value;</span><br><span class="line">    Entry(ThreadLocal k, Object v) &#123;</span><br><span class="line">        <span class="keyword">super</span>(k);</span><br><span class="line">        value = v;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>为什么在这里Entry的key要使用弱引用呢？</p>
-<p>不妨反过来想想，如果使用强引用，当ThreadLocal对象（假设为ThreadLocal@123456）的引用（是一个强引用，指向ThreadLocal@123456）被回收了，ThreadLocalMap本身（线程对象中）依然还持有ThreadLocal@123456的强引用，如果没有手动删除这个key，则ThreadLocal@123456不会被回收，所以只要当前线程不消亡，ThreadLocalMap引用的那些对象就不会被回收，可以认为这导致Entry内存泄漏。</p>
-<p>那使用弱引用的好处呢？</p>
-<p>如果使用弱引用，那指向ThreadLocal@123456对象的引用就两个：TL_INT强引用，和ThreadLocalMap中Entry的弱引用。一旦TL_INT被回收，则指向ThreadLocal@123456的就只有弱引用了，在下次gc的时候，这个ThreadLocal@123456就会被回收。</p>
-<p>那么问题来了，ThreadLocal@123456对象只是作为ThreadLocalMap的一个key而存在的，现在它被回收了，但是它对应的value并没有被回收，内存泄露依然存在！而且key被删了之后，变成了null，value更是无法被访问到了！针对这一问题，ThreadLocalMap类的设计本身已经有了这一问题的解决方案，那就是在每次get()/set()/remove()ThreadLocalMap中的值的时候，会自动清理key为null的value。如此一来，value也能被回收了。</p>
-<p>既然对key使用弱引用，能使key自动回收，那为什么不对value使用弱引用？答案显而易见，假设往ThreadLocalMap里存了一个value，gc过后value便消失了，那就无法使用ThreadLocalMap来达到存储全线程变量的效果了。（但是再次访问该key的时候，依然能取到value，此时取得的value是该value的初始值。即在删除之后，如果再次访问，取到null，会重新调用初始化方法。）</p>
-<p>所以我们总结了使用ThreadLocal时会发生内存泄漏的前提条件：</p>
-<ol>
-<li><p>ThreadLocal引用被设置为null，且后面没有set，get，remove操作。</p>
-</li>
-<li><p>线程一直运行，不停止。（线程池）</p>
-</li>
-<li><p>触发了垃圾回收。（Minor GC或Full GC）</p>
-</li>
-</ol>
-<p>我们看到ThreadLocal出现内存泄漏条件还是很苛刻的，所以我们只要破坏其中一个条件就可以避免内存泄漏，但为了更好的避免这种情况的发生我们使用ThreadLocal时遵守以下两个小原则:</p>
-<ol>
-<li>ThreadLocal申明为private static final。<br>  Private与final 尽可能不让他人修改变更引用，<br>  Static 表示为类属性，只有在程序结束才会被回收。</li>
-<li>ThreadLocal使用后务必调用remove方法。<br>   最简单有效的方法是使用后将其移除。</li>
-</ol>
-]]></content>
-      <categories>
-        <category>并发编程</category>
-      </categories>
-      <tags>
-        <tag>Java</tag>
-        <tag>并发</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Spring-事务传播级别</title>
     <url>/2017/01/05/2017-01-05-Spring%E4%BA%8B%E5%8A%A1%E4%BC%A0%E6%92%AD%E7%BA%A7%E5%88%AB/</url>
     <content><![CDATA[<h2 id="一、TransactionPropagation"><a href="#一、TransactionPropagation" class="headerlink" title="一、TransactionPropagation"></a>一、TransactionPropagation</h2><ul>
@@ -238,276 +137,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Oracle下的分页查询</title>
-    <url>/2017/12/30/2017-12-30-Oracle%E4%B8%8B%E7%9A%84%E5%88%86%E9%A1%B5%E6%9F%A5%E8%AF%A2/</url>
-    <content><![CDATA[<h2 id="rownum与rowid"><a href="#rownum与rowid" class="headerlink" title="rownum与rowid"></a>rownum与rowid</h2><p>rownum与rowid都是伪列，并不存在于数据表结构定义中。</p>
-<h3 id="rownum"><a href="#rownum" class="headerlink" title="rownum"></a>rownum</h3><p>rownum是逻辑上的伪列，是在获取查询结果集后再加上去的 （获取一条记录加一个rownum）。对符合条件的结果添加一个从1开始的序列号。</p>
-<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">rownum</span>,phone_no <span class="keyword">from</span> ur_user_info <span class="keyword">where</span> <span class="keyword">rownum</span> &lt; <span class="number">6</span>;</span><br></pre></td></tr></table></figure>
-
-<p><strong>特点：</strong></p>
-<p>rownum是动态的，先有查询结果，然后再给结果集添加上rownum。</p>
-<p><strong>使用误区：</strong></p>
-<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="comment">-----错误写法：</span></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">rownum</span>, phone_no</span><br><span class="line">  <span class="keyword">from</span> (<span class="keyword">select</span> <span class="keyword">rownum</span> rn , phone_no <span class="keyword">from</span> ur_user_info ) a</span><br><span class="line"> <span class="keyword">where</span> a.rownum &gt; <span class="number">5</span></span><br><span class="line">   <span class="keyword">and</span> a.rownum &lt; <span class="number">10</span>;</span><br></pre></td></tr></table></figure>
-
-<p><strong>错误原因：</strong><br>当产生结果集时，oracle会产生一条rownum为1的记录，显然不符合where条件；那么就会产生第二条记录，同样rownum=1,也不符合记录；  一直下去，导致最后上述sql产生的结果集时空集。 </p>
-<p><strong>应用场景</strong></p>
-<ul>
-<li>分页查询</li>
-</ul>
-<h3 id="rowid"><a href="#rowid" class="headerlink" title="rowid"></a>rowid</h3><p>ROWID是ORACLE中的一个重要的概念。用于定位数据库中一条记录的一个相对唯一地址值。通常情况下，该值在该行数据插入到数据库表时即被确定且唯一。ROWID它是一个伪列，它并不实际存在于表中。它是ORACLE在读取表中数据行时，根据每一行数据的物理地址信息编码而成的一个伪列。所以根据一行数据的ROWID能找到一行数据的物理地址信息。从而快速地定位到数据行。数据库的大多数操作都是通过ROWID来完成的，而且使用ROWID来进行单记录定位速度是最快的。</p>
-<p>要理解索引，必须先搞清楚ROWID。</p>
-<p>rowid并不会真正存在于表的data block中,但是他会存在于index当中，用来通过rowid来寻找表中的行数据。</p>
-<p><strong>B-Tree索引</strong>的每个索引条目具有两个字段。第一个字段表示索引的键值，对于单列索引来说是一个值；而对于多列索引来说则是多个值组合在一起的。第二个字段表示键值所对应的记录行的ROWID。所以索引能加快查询速度。</p>
-<p><strong>特点：</strong></p>
-<p>rowid并未存储在表中，所以不支持增删改操作，只能用户查询。 </p>
-<p><strong>应用场景</strong></p>
-<ul>
-<li><p>去重：当多条记录主键相同或者多条记录完全一致时，只需要留下一条记录。（账单表中出现多条一样的数据）</p>
-<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">delete</span> <span class="keyword">from</span> bal_acctbook_info</span><br><span class="line"> <span class="keyword">where</span> <span class="keyword">rowid</span> <span class="keyword">not</span> <span class="keyword">in</span> (<span class="keyword">select</span> <span class="keyword">min</span>(<span class="keyword">rowid</span>)</span><br><span class="line">                       <span class="keyword">from</span> bal_acctbook_info</span><br><span class="line">                      <span class="keyword">where</span> balance_id = <span class="string">'4012562452'</span></span><br><span class="line">                        <span class="keyword">and</span> op_time = <span class="string">'20171212111111'</span>);</span><br></pre></td></tr></table></figure>
-
-</li>
-</ul>
-<h2 id="分页查询的几种方式"><a href="#分页查询的几种方式" class="headerlink" title="分页查询的几种方式"></a>分页查询的几种方式</h2><h3 id="利用rownum"><a href="#利用rownum" class="headerlink" title="利用rownum"></a>利用rownum</h3><figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> *</span><br><span class="line"><span class="keyword">FROM</span> (<span class="keyword">SELECT</span> <span class="keyword">ROWNUM</span> <span class="keyword">AS</span> rowno, t.*</span><br><span class="line">      <span class="keyword">FROM</span> emp t</span><br><span class="line">      <span class="keyword">WHERE</span> hire_date <span class="keyword">BETWEEN</span> <span class="keyword">TO_DATE</span>(<span class="string">'20060501'</span>, <span class="string">'yyyymmdd'</span>)</span><br><span class="line">          <span class="keyword">AND</span> <span class="keyword">TO_DATE</span>(<span class="string">'20060731'</span>, <span class="string">'yyyymmdd'</span>)</span><br><span class="line">        <span class="keyword">AND</span> <span class="keyword">ROWNUM</span> &lt;= (page)*page_size) table_alias</span><br><span class="line"><span class="keyword">WHERE</span> table_alias.rowno &gt;= (page<span class="number">-1</span>)*page_size;</span><br></pre></td></tr></table></figure>
-
-<h3 id="利用分析函数row-number"><a href="#利用分析函数row-number" class="headerlink" title="利用分析函数row_number"></a>利用分析函数row_number</h3><figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> </span><br><span class="line">        (<span class="keyword">select</span> row_number()  <span class="keyword">over</span>(<span class="keyword">order</span> <span class="keyword">by</span> usenum <span class="keyword">desc</span>) rownumber, t.*</span><br><span class="line">           <span class="keyword">from</span> t_account t)</span><br><span class="line">        <span class="keyword">where</span> rownumber &gt;= <span class="number">10</span> <span class="keyword">and</span> rownumber &lt;= <span class="number">20</span>;</span><br></pre></td></tr></table></figure>
-
-<p>两种方法在性能上差距并不大，并不会因为用了高级函数而提升性能。</p>
-<h2 id="分页的坑"><a href="#分页的坑" class="headerlink" title="分页的坑"></a>分页的坑</h2><p>后台分页有一个不可避免的缺点，就是数据变化比较频繁会导致数据遗漏、重叠等，比如取完第1页后，后台删掉了第1页的全部数据，接下去取第2页（实际已经是之前的第3页），会漏掉原本的第2页数据。</p>
-<h3 id="分页时，数据出现重复或者排序不稳定"><a href="#分页时，数据出现重复或者排序不稳定" class="headerlink" title="分页时，数据出现重复或者排序不稳定"></a>分页时，数据出现重复或者排序不稳定</h3><p>出现重复的原因：</p>
-<p>分页时，如果没有使用order by，oracle不会进行任何排序操作，如果sql没有要求排序，oracle会顺序的从数据块中读取符合条件的数据返回到客户端。所以在没有使用排序sql的时候，分页返回的数据可能是按顺序的，也可能是杂乱无章的，这都取决与数据的存储位置。</p>
-<p>在分页查询过程中，如果数据的物理位置发生了改变，就可能会引起分页数据重复的现象。 <strong>所以，要正确使用分页查询，sql语句中必须有排序条件。</strong></p>
-<p>但是，在有排序条件的时候，仍然会出现数据重复的现象，这是为什么呢？<br>通过了解oracle的排序机理就会明白，出现这种情况的原因是因为排序列值的不唯一性。 Oracle这里使用的排序算法不具有稳定性，也就是说，对于键值相等的数据，这种算法完成排序后，不保证这些键值相等的数据保持排序前的顺序.</p>
-<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> *</span><br><span class="line">  <span class="keyword">from</span> (<span class="keyword">select</span> row_.*, <span class="keyword">rownum</span> rownum_</span><br><span class="line">          <span class="keyword">from</span> (<span class="keyword">select</span> * <span class="keyword">from</span> table_name <span class="keyword">order</span> <span class="keyword">by</span> createtime) row_</span><br><span class="line">         <span class="keyword">where</span> <span class="keyword">rownum</span> &lt;= <span class="number">10</span>)</span><br><span class="line"> <span class="keyword">where</span> rownum_ &gt; <span class="number">0</span></span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p>内层结果集如果加入排序字段，比如：CREATETIME（创建日期），会发现筛选出来的结果集并不稳定，这个跟Oracle的排序机理有关系。</p>
-</blockquote>
-<h4 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h4><p>需要给sql加入排序唯一的排序字段。我们知道，排序时当有多个字段时，从左到右的排序方式进行排序，排在前面的优先级高，写法如下：</p>
-<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> *</span><br><span class="line">  <span class="keyword">from</span> (<span class="keyword">select</span> row_.*, <span class="keyword">rownum</span> rownum_</span><br><span class="line">          <span class="keyword">from</span> (<span class="keyword">select</span> * <span class="keyword">from</span> table_name <span class="keyword">order</span> <span class="keyword">by</span> createtime <span class="keyword">desc</span>, <span class="keyword">id</span> <span class="keyword">asc</span>) row_</span><br><span class="line">         <span class="keyword">where</span> <span class="keyword">rownum</span> &lt;= <span class="number">10</span>)</span><br><span class="line"> <span class="keyword">where</span> rownum_ &gt; <span class="number">0</span></span><br></pre></td></tr></table></figure>
-
-<p>总结：</p>
-<ul>
-<li>order by语句应当遵循条件唯一性原则，否则oracle不保证每次查询的结果集都相同。</li>
-<li>分页时，sql语句中需要有排序条件。 并且，排序条件如果没有唯一性，那么必须在后边跟上一个唯一性的条件，比如主键。</li>
-</ul>
-]]></content>
-      <categories>
-        <category>Oracle</category>
-      </categories>
-      <tags>
-        <tag>数据库</tag>
-        <tag>Oracle</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Java阻塞队列 - DelayQueue（延迟队列）</title>
-    <url>/2018/05/13/DelayQueue%EF%BC%88%E5%BB%B6%E8%BF%9F%E9%98%9F%E5%88%97%EF%BC%89/</url>
-    <content><![CDATA[<blockquote>
-<p>一种由延迟元素组成的无边界阻塞队列，其中一个元素只有在其延迟过期时才能被接受。队列的头是最快过期的延迟元素。如果没有延迟过期，则没有head，poll将返回null。当元素的getDelay（TimeUnit.NANOSECONDS）方法返回的值小于或等于零时，将发生过期。即使使用take或poll不能删除未过期的元素，也可以将它们视为正常元素。例如，size方法返回过期和未过期元素的计数。此队列不允许空元素（null）。</p>
-<p>这个类及其迭代器实现了集合和迭代器接口的所有可选方法。方法Iterator()中提供的迭代器不能保证以任何特定顺序遍历DelayQueue的元素。</p>
-<p>这个类是Java集合框架的成员。</p>
-<p>—- Doug Lea</p>
-</blockquote>
-<h2 id="应用场景"><a href="#应用场景" class="headerlink" title="应用场景"></a>应用场景</h2><p>在我们的业务中通常会有一些需求是这样的： </p>
-<ol>
-<li>淘宝订单业务:<code>下单之后如果三十分钟之内没有付款就自动取消订单</code>。</li>
-<li>饿了吗订餐通知:<code>下单成功后60s之后给用户发送短信通知</code>。</li>
-<li>缓存系统的设计，缓存中的对象，超过了空闲时间，需要从缓存中移出。</li>
-<li>……</li>
-</ol>
-<p>这类业务我们可以总结出一个特点:需要延迟工作。 </p>
-<p>DelayQueue可以满足这类需求。</p>
-<h2 id="实现细节"><a href="#实现细节" class="headerlink" title="实现细节"></a>实现细节</h2><p>首先，DelayQueue规则定了队列中的元素必须实现Delayed接口。</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DelayQueue</span>&lt;<span class="title">E</span> <span class="keyword">extends</span> <span class="title">Delayed</span>&gt; <span class="keyword">extends</span> <span class="title">AbstractQueue</span>&lt;<span class="title">E</span>&gt;</span></span><br><span class="line"><span class="class">    <span class="keyword">implements</span> <span class="title">BlockingQueue</span>&lt;<span class="title">E</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">transient</span> ReentrantLock lock = <span class="keyword">new</span> ReentrantLock();</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> PriorityQueue&lt;E&gt; q = <span class="keyword">new</span> PriorityQueue&lt;E&gt;();</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Condition available = lock.newCondition();</span><br><span class="line">    <span class="keyword">private</span> Thread leader = <span class="keyword">null</span>; <span class="comment">// 等待队头元素的线程</span></span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>由源码可以看出DelayQueue内部使用了优先级队列PriorityQueue来保存元素。当调用DelayQueue的offer方法时，把Delayed对象加入到优先队列q中。</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">offer</span><span class="params">(E e)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">final</span> ReentrantLock lock = <span class="keyword">this</span>.lock;</span><br><span class="line">    lock.lock();</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        q.offer(e);</span><br><span class="line">        <span class="keyword">if</span> (q.peek() == e) &#123; <span class="comment">// 如果新加入的元素是最快过期的元素</span></span><br><span class="line">            leader = <span class="keyword">null</span>;</span><br><span class="line">            available.signal(); <span class="comment">//唤醒阻塞的消费者线程</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        lock.unlock();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>DelayQueue的take方法，把优先队列q的first拿出来（peek），如果没有达到延时阀值，则进行await处理。</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> E <span class="title">take</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">    <span class="keyword">final</span> ReentrantLock lock = <span class="keyword">this</span>.lock;</span><br><span class="line">    lock.lockInterruptibly(); <span class="comment">// 调用后一直阻塞直到获得锁,但是接受中断信号</span></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">for</span> (;;) &#123; <span class="comment">// for(;;)比while(true)生成的字节码指令更少，不占用寄存器，而且没有判断跳转</span></span><br><span class="line">            E first = q.peek();</span><br><span class="line">            <span class="keyword">if</span> (first == <span class="keyword">null</span>)</span><br><span class="line">                available.await(); <span class="comment">// 如果没有元素，直接阻塞</span></span><br><span class="line">            <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="keyword">long</span> delay = first.getDelay(NANOSECONDS); <span class="comment">// 判断是否过期</span></span><br><span class="line">                <span class="keyword">if</span> (delay &lt;= <span class="number">0</span>) <span class="comment">// 如果过期了，直接弹出队头</span></span><br><span class="line">                    <span class="keyword">return</span> q.poll();</span><br><span class="line">                first = <span class="keyword">null</span>; <span class="comment">// don't retain ref while waiting</span></span><br><span class="line">                <span class="keyword">if</span> (leader != <span class="keyword">null</span>)</span><br><span class="line">                    available.await(); <span class="comment">// 如果没过期，且已经有leader在等待队头元素，则继续阻塞等待,同时释放锁</span></span><br><span class="line">                <span class="keyword">else</span> &#123;</span><br><span class="line">                    Thread thisThread = Thread.currentThread();</span><br><span class="line">                    leader = thisThread;</span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">                        available.awaitNanos(delay); <span class="comment">// 如果leader就是当前线程，则阻塞指定的延迟时间</span></span><br><span class="line">                    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                        <span class="keyword">if</span> (leader == thisThread)</span><br><span class="line">                            leader = <span class="keyword">null</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (leader == <span class="keyword">null</span> &amp;&amp; q.peek() != <span class="keyword">null</span>)</span><br><span class="line">            available.signal();</span><br><span class="line">        lock.unlock();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>DelayQueue的线程安全性是由ReentrantLock保证的。线程进入方法后会先获取锁，如果获取不到，会阻塞直至获取，如果获取到了，就会继续操作，此时如果获取的元素未过期，则本线程阻塞，一旦阻塞就会释放当前线程持有的锁。</p>
-<p>当一个线程成为leader时，它只等待下一个延迟过去，而其他线程则无限期地等待。leader线程必须在从 take() 或 poll(…) 返回之前向其他线程发出信号，除非其他线程在此期间成为引导线程。</p>
-<h2 id="代码案例"><a href="#代码案例" class="headerlink" title="代码案例"></a>代码案例</h2><p>下面以一个简单的生产者-消费者的例子来展示DelayQueue的延时处理。我们将向一个延时队列中扔进一堆延迟时间不等的任务，然后单独开启一个线程从队列中消费数据。</p>
-<p>任务对象必须实现Delayed接口。</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Task</span> <span class="keyword">implements</span> <span class="title">Delayed</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">long</span> delayTime; <span class="comment">// 多久之后执行</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">long</span> expireTime; <span class="comment">// 过期时间点</span></span><br><span class="line">    <span class="keyword">private</span> String taskName; <span class="comment">// 任务名称</span></span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Task</span><span class="params">(String taskName, <span class="keyword">long</span> delayTime)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.taskName = taskName;</span><br><span class="line">        <span class="keyword">this</span>.delayTime = delayTime;</span><br><span class="line">        <span class="keyword">this</span>.expireTime = System.nanoTime() + TimeUnit.NANOSECONDS.convert(delayTime, TimeUnit.SECONDS);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">doAction</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="keyword">this</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 重写比较方法，让队列中的元素按照过期时间来排序</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">compareTo</span><span class="params">(Delayed o)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">long</span> d = (<span class="keyword">this</span>.getDelay(TimeUnit.NANOSECONDS) - o.getDelay(TimeUnit.NANOSECONDS));</span><br><span class="line">        <span class="keyword">return</span> d &gt; <span class="number">0</span> ? <span class="number">1</span> : d &lt; <span class="number">0</span> ? -<span class="number">1</span> :<span class="number">0</span>;</span><br><span class="line">        <span class="comment">// return (int) d; 这里绝对不能使用强制转换，极易出现上限溢出后发生数据截断。导致最后排序结果不符合预期。</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">long</span> <span class="title">getDelay</span><span class="params">(TimeUnit unit)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> unit.convert(<span class="keyword">this</span>.expireTime - System.nanoTime(), TimeUnit.NANOSECONDS);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"Task:"</span> + taskName + <span class="string">" [delayTime="</span> + delayTime + <span class="string">", expireTime="</span> + expireTime + <span class="string">"]"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>测试代码如下:</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">final</span> DelayQueue&lt;Task&gt; taskQueue = <span class="keyword">new</span> DelayQueue&lt;&gt;();</span><br><span class="line">    Thread producer = <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">        </span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">int</span> i = <span class="number">1</span>;</span><br><span class="line">            <span class="keyword">while</span> (i &lt; <span class="number">10</span>) &#123;</span><br><span class="line">                taskQueue.put(<span class="keyword">new</span> Task(i + <span class="string">""</span>, i));</span><br><span class="line">                i++;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">    </span><br><span class="line">    producer.start();</span><br><span class="line">    </span><br><span class="line">    Thread consumer = <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">        <span class="comment">// 消费队列中的过期元素，执行doAction</span></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">                Task task;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    task = taskQueue.take();</span><br><span class="line">                    task.doAction();</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                    e.printStackTrace();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            </span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">    </span><br><span class="line">    consumer.start();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>结果如下，各个任务依次打印：</p>
-<p><img src="/2018/05/13/DelayQueue%EF%BC%88%E5%BB%B6%E8%BF%9F%E9%98%9F%E5%88%97%EF%BC%89/image-20200513171457561.png" alt="image-20200513171457561"></p>
-<p>这里还有一个实现缓存的例子，链接如下：<br> <a href="https://link.jianshu.com?t=http://www.cnblogs.com/jobs/archive/2007/04/27/730255.html" target="_blank" rel="noopener">http://www.cnblogs.com/jobs/archive/2007/04/27/730255.html</a></p>
-<h2 id="问题总结"><a href="#问题总结" class="headerlink" title="问题总结"></a>问题总结</h2><p>在实现Delayed接口时，重写compareTo()方法是很重要的，只有compareTo()方法没有问题，才能保证队列中元素是按过期时间排序的。如果不重写，则需要传入比较器。</p>
-<p>DelayQueue中的元素可以通过remove方法移除，此时请保证equals与hashCode方法的正确性。</p>
-]]></content>
-      <categories>
-        <category>并发编程</category>
-      </categories>
-      <tags>
-        <tag>Java</tag>
-        <tag>并发</tag>
-        <tag>阻塞队列</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>数据库 - 事务隔离与数据库锁</title>
-    <url>/2019/12/01/%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E9%94%81/</url>
-    <content><![CDATA[<h2 id="一、什么是事务？"><a href="#一、什么是事务？" class="headerlink" title="一、什么是事务？"></a>一、什么是事务？</h2><blockquote>
-<p><strong>数据库事务</strong>（<strong>Transaction</strong>）是<a href="https://zh.wikipedia.org/wiki/数据库管理系统" target="_blank" rel="noopener">数据库管理系统</a>执行过程中的一个逻辑单位，由一个有限的<a href="https://zh.wikipedia.org/wiki/数据库" target="_blank" rel="noopener">数据库</a>操作序列构成。这些操作要么全部执行,要么全部不执行，是一个不可分割的工作单位。事务由事务开始与事务结束之间执行的全部数据库操作组成。</p>
-<p>—- <em>来自wikipedia</em></p>
-</blockquote>
-<p>例子：某人要在商店使用<a href="https://zh.wikipedia.org/wiki/電子貨幣" target="_blank" rel="noopener">电子货币</a>购买100元的东西，当中至少包括两个操作：</p>
-<ol>
-<li>该人账户减少100元</li>
-<li>商店账户增加100元</li>
-</ol>
-<p><strong>支持事务的数据库管理系统</strong>（<strong>transactional DBMS</strong>）就是要确保以上两个操作（整个“事务”）都能完成，或一起取消；否则就会出现100元平白消失或出现的情况。</p>
-<p>在 MySQL 中，事务支持是在引擎层实现的。MySQL 是一个支持多引擎的系统，但并不是所有的引擎都支持事务。比如 MySQL 原生的 MyISAM 引擎就不支持事务，这也是 MyISAM 被 InnoDB 取代的重要原因之一。</p>
-<h3 id="事务的特性（ACID）"><a href="#事务的特性（ACID）" class="headerlink" title="事务的特性（ACID）"></a>事务的特性（ACID）</h3><ul>
-<li><strong>原子性</strong><br>　　事务必须是原子工作单元；对于其数据修改，要么全都执行，要么全都不执行。通常，与某个事务关联的操作具有共同的目标，并且是相互依赖的。如果系统只执行这些操作的一个子集，则可能会破坏事务的总体目标。原子性消除了系统处理操作子集的可能性。 </li>
-<li><strong>一致性</strong><br>　　 事务在完成时，必须使所有的数据都保持一致状态。在相关数据库中，所有规则都必须应用于事务的修改，以保持所有数据的完整性。事务结束时，所有的内部<a href="http://lib.csdn.net/base/datastructure" target="_blank" rel="noopener">数据结构</a>（如 B 树索引或双向链表）都必须是正确的。某些维护一致性的责任由应用程序开发人员承担，他们必须确保应用程序已强制所有已知的完整性约束。例如，当开发用于转帐的应用程序时，应避免在转帐过程中任意移动小数点。 </li>
-<li><strong>隔离性</strong><br>　　由并发事务所作的修改必须与任何其它并发事务所作的修改隔离。事务查看数据时数据所处的状态，要么是另一并发事务修改它之前的状态，要么是另一事务修改它之后的状态，事务不会查看中间状态的数据。这称为可串行性，因为它能够重新装载起始数据，并且重播一系列事务，以使数据结束时的状态与原始事务执行的状态相同。当事务可序列化时将获得最高的隔离级别。在此级别上，从一组可并行执行的事务获得的结果与通过连续运行每个事务所获得的结果相同。由于高度隔离会限制可并行执行的事务数，所以一些应用程序降低隔离级别以换取更大的吞吐量。  </li>
-<li><strong>持久性</strong><br>　　 事务完成之后，它对于系统的影响是永久性的。</li>
-</ul>
-<h2 id="二、隔离性与隔离级别"><a href="#二、隔离性与隔离级别" class="headerlink" title="二、隔离性与隔离级别"></a>二、隔离性与隔离级别</h2><h3 id="四种隔离级别"><a href="#四种隔离级别" class="headerlink" title="四种隔离级别"></a>四种隔离级别</h3><p>当数据库上有多个事务同时执行的时候，就可能出现脏读（dirty read）、不可重复读（non-repeatable read）、幻读（phantom read）的问题，为了解决这些问题，就有了“隔离级别”的概念。</p>
-<p>在谈隔离级别之前，你首先要知道，你隔离得越严实，效率就会越低。因此很多时候，我们都要在二者之间寻找一个平衡点。SQL 标准的事务隔离级别包括：读未提交（read uncommitted）、读提交（read committed）、可重复读（repeatable read）和串行化（serializable ）。</p>
-<ul>
-<li><strong>Read Uncommitted（读取未提交）</strong><br>在该隔离级别，所有事务都可以看到其他未提交事务的执行结果。本隔离级别很少用于实际应用，因为它的性能也不比其他级别好多少。读取未提交的数据，也被称之为脏读（Dirty Read）。</li>
-<li><strong>Read Committed（读取已提交）</strong><br>这是大多数数据库系统的默认隔离级别（但不是MySQL默认的）。它满足了隔离的简单定义：一个事务只能看见已经提交事务所做的改变。这种隔离级别 也支持所谓的不可重复读（Nonrepeatable Read），因为同一事务的其他实例在该实例处理其间可能会有新的commit，所以同一select可能返回不同结果。</li>
-<li><strong>Repeatable Read（可重读）</strong><br>这是MySQL的默认事务隔离级别，它确保同一事务的多个实例在并发读取数据时，会看到同样的数据行。不过理论上，这会导致另一个棘手的问题：幻读 （Phantom Read）。简单的说，幻读指当用户读取某一范围的数据行时，另一个事务又在该范围内插入了新行，当用户再读取该范围的数据行时，会发现有新的“幻影” 行。InnoDB和Falcon存储引擎通过多版本并发控制（MVCC，Multiversion Concurrency Control）机制解决了该问题。</li>
-<li><strong>Serializable（可串行化）</strong><br>这是最高的隔离级别，它通过强制事务排序，使之不可能相互冲突，从而解决幻读问题。简言之，它是在每个读的数据行上加上共享锁。在这个级别，可能导致大量的超时现象和锁竞争。</li>
-</ul>
-<p>由不同的隔离级别导致的问题如下：</p>
-<ul>
-<li><p><strong>脏读(Drity Read)</strong>：某个事务已更新一份数据，另一个事务在此时读取了同一份数据，由于某些原因，前一个RollBack了操作，则后一个事务所读取的数据就会是不正确的。</p>
-</li>
-<li><p><strong>不可重复读(Non-repeatable read)</strong>：在一个事务的两次查询之中数据不一致，这可能是两次查询过程中间插入了一个事务更新的原有的数据。</p>
-</li>
-<li><p><strong>幻读(Phantom Read)</strong>：在一个事务的两次查询中数据笔数不一致，例如有一个事务查询了几列(Row)数据，而另一个事务却在此时插入了新的几列数据，先前的事务在接下来的查询中，就会发现有几列数据是它先前所没有的。</p>
-</li>
-</ul>
-<p>对应关系如图：</p>
-<img src="http://dl.iteye.com/upload/picture/pic/72610/af5b9c1e-4517-3df2-ad62-af25d1672d12.jpg" alt="img" style="zoom:67%;">
-
-<h3 id="事务隔离的实现（MySQL为例）"><a href="#事务隔离的实现（MySQL为例）" class="headerlink" title="事务隔离的实现（MySQL为例）"></a>事务隔离的实现（MySQL为例）</h3><p>在实现上，数据库里面会创建一个视图，访问的时候以视图的逻辑结果为准。在“可重复读”隔离级别下，这个视图是在事务启动时创建的，整个事务存在期间都用这个视图。在“读提交”隔离级别下，这个视图是在每个 SQL 语句开始执行的时候创建的。这里需要注意的是，“读未提交”隔离级别下直接返回记录上的最新值，没有视图概念；而“串行化”隔离级别下直接用加锁的方式来避免并行访问。我们可以看到在不同的隔离级别下，数据库行为是有所不同的。</p>
-<p><strong>Oracle 数据库的默认隔离级别是“读提交”，而MySQL数据库的默认隔离级别是“可重复读”。</strong>因此对于一些从 Oracle 迁移到 MySQL 的应用，为保证数据库隔离级别的一致，你一定要记得将 MySQL 的隔离级别设置为“读提交”。</p>
-<p>在 MySQL 中，实际上每条记录在更新的时候都会同时记录一条回滚操作。记录上的最新值，通过回滚操作，都可以得到前一个状态的值。假设一个值从 1 被按顺序改成了 2、3、4，在回滚日志里面就会有类似下面的记录：</p>
-<img src="https://static001.geekbang.org/resource/image/d9/ee/d9c313809e5ac148fc39feff532f0fee.png" alt="img" style="zoom:50%;">
-
-<p>当前值是 4，但是在查询这条记录的时候，不同时刻启动的事务会有不同的 read-view。如图中看到的，在视图 A、B、C 里面，这一个记录的值分别是 1、2、4，同一条记录在系统中可以存在多个版本，就是数据库的多版本并发控制（MVCC）。对于 read-view A，要得到 1，就必须将当前值依次执行图中所有的回滚操作得到。</p>
-<p>同时你会发现，即使现在有另外一个事务正在将 4 改成 5，这个事务跟 read-view A、B、C 对应的事务是不会冲突的。你一定会问，回滚日志总不能一直保留吧，什么时候删除呢？</p>
-<p>答案是，在不需要的时候才删除。也就是说，系统会判断，当没有事务再需要用到这些回滚日志时，回滚日志会被删除。什么时候才不需要了呢？就是当系统里没有比这个回滚日志更早的 read-view 的时候。</p>
-<p><strong>基于上面的说明，我们来讨论一下为什么建议你尽量不要使用长事务。</strong></p>
-<p>长事务意味着系统里面会存在很老的事务视图。由于这些事务随时可能访问数据库里面的任何数据，所以这个事务提交之前，数据库里面它可能用到的回滚记录都必须保留，这就会导致大量占用存储空间。</p>
-<p>在 MySQL 5.5 及以前的版本，回滚日志是跟数据字典一起放在 ibdata 文件里的，即使长事务最终提交，回滚段被清理，文件也不会变小。我见过数据只有 20GB，而回滚段有 200GB 的库。最终只好为了清理回滚段，重建整个库。除了对回滚段的影响，长事务还占用锁资源，也可能拖垮整个库，这个我们会在后面讲锁的时候展开。</p>
-<h2 id="三、数据库锁"><a href="#三、数据库锁" class="headerlink" title="三、数据库锁"></a>三、数据库锁</h2><blockquote>
-<p>数据库锁设计的初衷是处理并发问题。作为多用户共享的资源，当出现并发访问的时候，数据库需要合理地控制资源的访问规则。而锁就是用来实现这些访问规则的重要数据结构。</p>
-</blockquote>
-<p>数据库中锁的种类有很多，根据不同的划分标准，可以分为不同的种类，也因此衍生出了各种关于锁的专业名词，如果没捋清这其中的关系，很容易陷入术语的漩涡，最后弄得一头雾水。</p>
-<p>所以我在这里先摆张从网上找的关系图，先让大家对锁有个整体上的认识，不至于犯嘀咕。</p>
-<img src="http://raw.githubusercontent.com/IMWYY/AboutMyself/master/picBed/Screenshot1520500121.png" alt="img" style="zoom:50%;">
-
-<h3 id="悲观锁与乐观锁"><a href="#悲观锁与乐观锁" class="headerlink" title="悲观锁与乐观锁"></a>悲观锁与乐观锁</h3><p><strong>悲观锁</strong></p>
-<p>悲观锁，正如其名，它指的是对数据被外界（包括本系统当前的其他事务，以及来自外部系统的事务处理）修改持保守态度，因此，在整个数据处理过程中，将数据处于锁定状态。悲观锁的实现，往往依靠数据库提供的锁机制（也只有数据库层提供的锁机制才能真正保证数据访问的排他性，否则，即使在本系统中实现了加锁机制，也无法保证外部系统不会修改数据）。</p>
-<ol>
-<li><p>使用悲观锁，我们必须关闭mysql数据库的自动提交属性，采用手动提交事务的方式，因为MySQL默认使用autocommit模式，也就是说，当你执行一个更新操作后，MySQL会立刻将结果进行提交。</p>
-</li>
-<li><p>需要注意的是，在事务中，只有SELECT … FOR UPDATE 或LOCK IN SHARE MODE 同一笔数据时会等待其它事务结束后才执行，一般SELECT … 则不受此影响。对于UPDATE、DELETE和INSERT语句，InnoDB会自动给涉及数据集加排他锁（X)。</p>
-</li>
-<li><p>补充：MySQL中select…for update的Row Lock与Table Lock</p>
-<p>使用select…for update会把数据给锁住，不过我们需要注意一些锁的级别，MySQL InnoDB默认Row-Level Lock，所以只有明确地指定主键（或有索引的地方），MySQL 才会执行Row lock (只锁住被选取的数据) ，否则MySQL 将会执行Table Lock (将整个数据表单给锁住)。</p>
-</li>
-</ol>
-<p><strong>乐观锁</strong></p>
-<p>乐观锁（ Optimistic Locking ） 相对悲观锁而言，乐观锁假设认为数据一般情况下不会造成冲突，所以在数据进行提交更新的时候，才会正式对数据的冲突与否进行检测，如果发现冲突了，则让返回用户错误的信息，让用户决定如何去做（<strong>一般是回滚事务</strong>）。那么我们如何实现乐观锁呢，一般来说有以下2种方式：</p>
-<ol>
-<li>使用数据版本（Version）记录机制实现，这是乐观锁最常用的一种实现方式。何谓数据版本？即为数据增加一个版本标识，一般是通过为数据库表增加一个数字类型的 “version” 字段来实现。当读取数据时，将version字段的值一同读出，数据每更新一次，对此version值加一。当我们提交更新的时候，判断数据库表对应记录的当前版本信息与第一次取出来的version值进行比对，如果数据库表当前版本号与第一次取出来的version值相等，则予以更新，否则认为是过期数据。</li>
-<li>乐观锁定的第二种实现方式和第一种差不多，同样是在需要乐观锁控制的table中增加一个字段，名称无所谓，字段类型使用时间戳（timestamp）, 和上面的version类似，也是在更新提交的时候检查当前数据库中数据的时间戳和自己更新前取到的时间戳进行对比，如果一致则OK，否则就是版本冲突。</li>
-</ol>
-<p><strong>总结：</strong></p>
-<p>两种锁各有优缺点，不可认为一种好于另一种，像乐观锁适用于写比较少的情况下，即冲突真的很少发生的时候，这样可以省去了锁的开销，加大了系统的整个吞吐量。但如果经常产生冲突，上层应用会不断的进行retry，这样反倒是降低了性能，所以这种情况下用悲观锁就比较合适。</p>
-<p>另外，高并发情况下个人认为乐观锁要好于悲观锁，因为悲观锁的机制使得各个线程等待时间过长，极其影响效率，乐观锁可以在一定程度上提高并发度。</p>
-<h3 id="共享锁与排他锁"><a href="#共享锁与排他锁" class="headerlink" title="共享锁与排他锁"></a>共享锁与排他锁</h3><p>共享锁（又称<strong>读锁</strong>）、排它锁（又称<strong>写锁</strong>）。</p>
-<p><strong>共享锁（S）</strong></p>
-<ul>
-<li><p>加锁与解锁：当一个事务执行select语句时，数据库系统会为这个事务分配一把共享锁，来锁定被查询的数据。在默认情况下，数据被读取后，数据库系统立即解除共享锁。例如，当一个事务执行查询“SELECT * FROM accounts”语句时，数据库系统首先锁定第一行，读取之后，解除对第一行的锁定，然后锁定第二行。这样，在一个事务读操作过程中，允许其他事务同时更新accounts表中未锁定的行。</p>
-</li>
-<li><p>兼容性：如果数据资源上放置了共享锁，还能再放置共享锁和更新锁。</p>
-</li>
-<li><p>并发性能：具有良好的并发性能，当数据被放置共享锁后，还可以再放置共享锁或更新锁。所以并发性能很好。</p>
-</li>
-</ul>
-<p><strong>排他锁（X）</strong></p>
-<ul>
-<li><p>加锁与解锁：当一个事务执行insert、update、select … for update或delete语句时，数据库系统会自动对SQL语句操纵的数据资源使用独占锁。如果该数据资源已经有其他锁（任何锁）存在时，就无法对其再放置独占锁了。</p>
-</li>
-<li><p>兼容性：独占锁不能和其他锁兼容，如果数据资源上已经加了独占锁，就不能再放置其他的锁了。同样，如果数据资源上已经放置了其他锁，那么也就不能再放置独占锁了。</p>
-</li>
-<li><p>并发性能：最差。只允许一个事务访问锁定的数据，如果其他事务也需要访问该数据，就必须等待。</p>
-</li>
-</ul>
-<h3 id="意向锁"><a href="#意向锁" class="headerlink" title="意向锁"></a>意向锁</h3><p>知乎上有个解释十分形象，如下：</p>
-<ol>
-<li><p>在MySQL中有表锁，读锁锁表，会阻塞其他事务修改表数据。写锁锁表，会阻塞其他事务读和写。</p>
-</li>
-<li><p>InnoDB引擎又支持行锁，行锁分为共享锁，一个事务对一行的共享只读锁。排它锁，一个事务对一行的排他读写锁。</p>
-</li>
-<li><p>这两种类型的锁共存的问题。考虑这个例子：事务A锁住了表中的一行，让这一行只能读，不能写。之后，事务B申请整个表的写锁。如果事务B申请成功，那么理论上它就能修改表中的任意一行，这与A持有的行锁是冲突的。数据库需要避免这种冲突，就是说要让B的申请被阻塞，直到A释放了行锁。</p>
-</li>
-</ol>
-<p>数据库要怎么判断这个冲突呢？</p>
-<ul>
-<li>step1：判断表是否已被其他事务用表锁锁表</li>
-<li>step2：判断表中的每一行是否已被行锁锁住。</li>
-</ul>
-<p>注意step2，这样的判断方法效率实在不高，因为需要遍历整个表。于是就有了意向锁。在意向锁存在的情况下，事务A必须先申请表的意向共享锁，成功后再申请一行的行锁。</p>
-<p>在意向锁存在的情况下，上面的判断可以改成</p>
-<ul>
-<li>step1：不变</li>
-<li>step2：发现表上有意向共享锁，说明表中有些行被共享行锁锁住了，因此，事务B申请表的写锁会被阻塞。</li>
-</ul>
-<p>注意：申请意向锁的动作是数据库完成的，就是说，事务A申请一行的行锁的时候，数据库会自动先开始申请表的意向锁，不需要我们程序员使用代码来申请。</p>
-<h3 id="怎么减少行锁对性能的影响？"><a href="#怎么减少行锁对性能的影响？" class="headerlink" title="怎么减少行锁对性能的影响？"></a>怎么减少行锁对性能的影响？</h3><p>先给你举个例子。在下面的操作序列中，事务 B 的 update 语句执行时会是什么现象呢？假设字段 id 是表 t 的主键。</p>
-<img src="https://static001.geekbang.org/resource/image/51/10/51f501f718e420244b0a2ec2ce858710.jpg" alt="img" style="zoom:50%;">
-
-<p>这个问题的结论取决于事务 A 在执行完两条 update 语句后，持有哪些锁，以及在什么时候释放。你可以验证一下：实际上事务 B 的 update 语句会被阻塞，直到事务 A 执行 commit 之后，事务 B 才能继续执行。</p>
-<p>知道了这个答案，你一定知道了事务 A 持有的两个记录的行锁，都是在 <strong>commit 的时候才释放的</strong>。</p>
-<p>也就是说，<strong>在 InnoDB 事务中，行锁是在需要的时候才加上的，但并不是不需要了就立刻释放，而是要等到事务结束时才释放。这个就是两阶段锁协议</strong>。</p>
-<p>知道了这个设定，对我们使用事务有什么帮助呢？那就是，<strong>如果你的事务中需要锁多个行，要把最可能造成锁冲突、最可能影响并发度的锁尽量往后放</strong>。</p>
-<h3 id="死锁和死锁检测"><a href="#死锁和死锁检测" class="headerlink" title="死锁和死锁检测"></a>死锁和死锁检测</h3><p>当并发系统中不同线程出现循环资源依赖，涉及的线程都在等待别的线程释放资源时，就会导致这几个线程都进入无限等待的状态，称为死锁。这里我用数据库中的行锁举个例子。</p>
-<img src="https://static001.geekbang.org/resource/image/4d/52/4d0eeec7b136371b79248a0aed005a52.jpg" alt="img" style="zoom:50%;">
-
-<p>这时候，事务 A 在等待事务 B 释放 id=2 的行锁，而事务 B 在等待事务 A 释放 id=1 的行锁。 事务 A 和事务 B 在互相等待对方的资源释放，就是进入了死锁状态。当出现死锁以后，有两种策略：</p>
-<ul>
-<li>一种策略是，直接进入等待，直到超时。这个超时时间可以通过参数 innodb_lock_wait_timeout 来设置。</li>
-<li>另一种策略是，发起死锁检测，发现死锁后，主动回滚死锁链条中的某一个事务，让其他事务得以继续执行。将参数 innodb_deadlock_detect 设置为 on，表示开启这个逻辑。</li>
-</ul>
-<p>在 InnoDB 中，innodb_lock_wait_timeout 的默认值是 50s，意味着如果采用第一个策略，当出现死锁以后，第一个被锁住的线程要过 50s 才会超时退出，然后其他线程才有可能继续执行。对于在线服务来说，这个等待时间往往是无法接受的。</p>
-<p>但是，我们又不可能直接把这个时间设置成一个很小的值，比如 1s。这样当出现死锁的时候，确实很快就可以解开，但如果不是死锁，而是简单的锁等待呢？所以，超时时间设置太短的话，会出现很多误伤。</p>
-<p>所以，正常情况下我们还是要采用第二种策略，即：<strong>主动死锁检测</strong>，而且 innodb_deadlock_detect 的默认值本身就是 on。主动死锁检测在发生死锁的时候，是能够快速发现并进行处理的，但是它也是有额外负担的。</p>
-<p>你可以想象一下这个过程：</p>
-<p>每当一个事务被锁的时候，就要看看它所依赖的线程有没有被别人锁住，如此循环，最后判断是否出现了循环等待，也就是死锁。那如果是我们上面说到的所有事务都要更新同一行的场景呢？每个新来的被堵住的线程，都要判断会不会由于自己的加入导致了死锁，这是一个时间复杂度是 O(n) 的操作。</p>
-<p>假设有 1000 个并发线程要同时更新同一行，那么死锁检测操作就是 100 万这个量级的。虽然最终检测的结果是没有死锁，但是这期间要消耗大量的 CPU 资源。因此，你就会看到 CPU 利用率很高，但是每秒却执行不了几个事务。根据上面的分析，我们来讨论一下，怎么解决由这种热点行更新导致的性能问题呢？问题的症结在于，死锁检测要耗费大量的 CPU 资源。</p>
-<p><strong>解决方案</strong></p>
-<ul>
-<li><p>一种头痛医头的方法，就是如果你能确保这个业务一定不会出现死锁，可以临时把死锁检测关掉。但是这种操作本身带有一定的风险，因为业务设计的时候一般不会把死锁当做一个严重错误，毕竟出现死锁了，就回滚，然后通过业务重试一般就没问题了，这是业务无损的。而关掉死锁检测意味着可能会出现大量的超时，这是业务有损的。</p>
-</li>
-<li><p>另一个思路是控制并发度。根据上面的分析，你会发现如果并发能够控制住，比如同一行同时最多只有 10 个线程在更新，那么死锁检测的成本很低，就不会出现这个问题。一个直接的想法就是，在客户端做并发控制。但是，你会很快发现这个方法不太可行，因为客户端很多。我见过一个应用，有 600 个客户端，这样即使每个客户端控制到只有 5 个并发线程，汇总到数据库服务端以后，峰值并发数也可能要达到 3000。</p>
-<p>因此，这个并发控制要做在数据库服务端。如果你有中间件，可以考虑在中间件实现；如果你的团队有能修改 MySQL 源码的人，也可以做在 MySQL 里面。基本思路就是，对于相同行的更新，在进入引擎之前排队。这样在 InnoDB 内部就不会有大量的死锁检测工作了。</p>
-</li>
-<li><p>可以考虑通过将一行改成逻辑上的多行来减少锁冲突。还是以影院账户为例，可以考虑放在多条记录上，比如 10 个记录，影院的账户总额等于这 10 个记录的值的总和。这样每次要给影院账户加金额的时候，随机选其中一条记录来加。这样每次冲突概率变成原来的 1/10，可以减少锁等待个数，也就减少了死锁检测的 CPU 消耗。这个方案看上去是无损的，但其实这类方案需要根据业务逻辑做详细设计。如果账户余额可能会减少，比如退票逻辑，那么这时候就需要考虑当一部分行记录变成 0 的时候，代码要有特殊处理。</p>
-</li>
-</ul>
-]]></content>
-      <categories>
-        <category>数据库</category>
-      </categories>
-      <tags>
-        <tag>数据库</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Linux下Nginx的安装</title>
     <url>/2018/01/07/2018-01-07-Linux%E4%B8%8Bnginx%E7%9A%84%E5%AE%89%E8%A3%85/</url>
     <content><![CDATA[<blockquote>
@@ -619,6 +248,158 @@
       </tags>
   </entry>
   <entry>
+    <title>Java多线程之ThreadLocal</title>
+    <url>/2017/12/24/2017-12-25-Java%E5%A4%9A%E7%BA%BF%E7%A8%8B%E4%B9%8BThreadLocal/</url>
+    <content><![CDATA[<blockquote>
+<p>ThreadLocal - 线程本地变量。顾名思义，ThreadLocal提供了线程内存储变量的能力，这些变量的不同之处在于针对不同的线程，它们各自读取的变量是对应于当前线程的，这些线程持有独立的变量副本，互不影响。通过get和set方法就可以得到当前线程对应的值。</p>
+<p>Spring声明式事务的重要实现基础就是ThreadLocal。</p>
+</blockquote>
+<h2 id="由线程不安全的SimpleDateFormat说起"><a href="#由线程不安全的SimpleDateFormat说起" class="headerlink" title="由线程不安全的SimpleDateFormat说起"></a>由线程不安全的SimpleDateFormat说起</h2><p>SimpleDateFormat是JDK提供的一个常用的日期格式化类，这个类不是线程安全的。如果在日期工具类中，将SimpleDateFormat初始化为一个静态变量以防止多次初始化，那么在并发情况下，调用方法进行格式化的结果可能会出现错误，甚至抛出异常。</p>
+<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><ol>
+<li>使用局部变量。局部变量是线程私有的，也就不存在线程安全问题。但这样每次调用时都需要初始化SimpleDateFormat，有性能开销。</li>
+<li>方法加同步锁synchronized。同步有性能开销，性能会受一定影响。</li>
+<li>使用ThreadLocal。阿里巴巴开发手册中推荐使用。</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// ThreadLocal解决方案代码</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 声明静态变量</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> ThreadLocal&lt;DateFormat&gt; DATE_FORMAT_TL = <span class="keyword">new</span> ThreadLocal&lt;DateFormat&gt;() &#123; </span><br><span class="line">    <span class="meta">@Override</span> </span><br><span class="line">    <span class="function"><span class="keyword">protected</span> DateFormat <span class="title">initialValue</span><span class="params">()</span> </span>&#123; </span><br><span class="line">    	<span class="keyword">return</span> <span class="keyword">new</span> SimpleDateFormat(<span class="string">"yyyy-MM-dd"</span>); </span><br><span class="line">    &#125; </span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 使用</span></span><br><span class="line">DateFormat df = DATE_FORMAT_TL.get();</span><br></pre></td></tr></table></figure>
+
+<p>使用上述代码，SimpleDateFormat被放入ThreadLocal中，每个线程在调用DATE_FORMAT_TL.get()时，都会从自己的线程本地存储中取变量，如果没有，就会执行initialValue创建一份，并存储在当前线程的本地存储中，下次调用时，当前线程可直接从本地存储中取出已经初始化好的SimpleDateFormat。</p>
+<h2 id="与局部变量的区别-聊聊应用场景"><a href="#与局部变量的区别-聊聊应用场景" class="headerlink" title="与局部变量的区别 - 聊聊应用场景"></a>与局部变量的区别 - 聊聊应用场景</h2><p>什么时候使用ThreadLocal呢？</p>
+<p>很多人将ThreadLocal的作用单一理解为将一个变量变为线程私有的，从而保证线程安全性，这是片面的，因为想做到这一点的话，使用局部变量就够了。局部变量存在于栈上，天生就是线程私有的，并且用起来还简单。</p>
+<p>他们是有很大区别的。</p>
+<p>首先，他们的生命周期不同，ThreadLocal的生命周期与线程相同（一般情况下，特殊情况在后面内存泄露一节会讨论），而局部变量的生命周期短的多，方法调用一结束，局部变量就在栈上销毁了。因此ThreadLocal既可以保证变量操作的线程安全性，也保证了同一线程在其生命周期内访问到的ThreadLocal是相同的，这也是SimpleDateFormat中ThreadLocal方案优于其他方案的原因，因为针对当前线程只需创建一次就够了。</p>
+<p>其次，局部变量只能应用于方法上，而ThreadLocal可以应用于类属性变量上。</p>
+<p><strong>存储单个线程上下文信息</strong></p>
+<p>Context类的实现方式之一。</p>
+<p><strong>保证类变量的线程安全</strong></p>
+<p>一般一个类的属性变量按照java内存模型的设计都属于共享内存（存放在堆中）。一旦涉及多线程编程。对这个变量的修改读取基本都是线程不安全。当然要想安全就要加锁synchonize 或者各种lock. 哪怕是号称线程安全的各种并发类比如ConcurrentHashMap。这种类说是线程安全只是针对ConcurrentHashMap自己的一次get 或者set操作。不意味着多次get set，或者一次get+set的操作。要想一整套get+set都是线程安全还是要加锁。</p>
+<p>这时可以使用ThreadLocal，每个线程存储一个变量副本，保证线程安全性。</p>
+<p><strong>简化参数传递</strong></p>
+<blockquote>
+<p>如果我想跟踪一个请求，从接收请求，处理到返回的整个流程，有没有好的办法?</p>
+<p>这其实就是线程内共享数据的问题。</p>
+</blockquote>
+<p>Threadlocal 可以做到传递参数。这是ThreadLocal的一个功能。很多人可能不知道，因为Threadlocal 是线程本地变量，只要线程不销毁，就会一直存在，因此可以使用Threadlocal来跟踪传递参数。</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 示例代码</span></span><br><span class="line"><span class="number">1</span> 定义一个类读写threadlocal变量</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ThreadAttributes</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">static</span> ThreadLocal&lt;Map&lt;String, Object&gt;&gt; threadAttribues = <span class="keyword">new</span> ThreadLocal&lt;Map&lt;String, Object&gt;&gt;() &#123;</span><br><span class="line">                <span class="function"><span class="keyword">protected</span> <span class="keyword">synchronized</span> Map&lt;String, Object&gt; <span class="title">initialValue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                        <span class="keyword">return</span> <span class="keyword">new</span> HashMap&lt;String, Object&gt;();</span><br><span class="line">                &#125;</span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Object <span class="title">getThreadAttribute</span><span class="params">(String name)</span> </span>&#123;</span><br><span class="line">                <span class="keyword">return</span> threadAttribues.get().get(name);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Object <span class="title">setThreadAttribute</span><span class="params">(String name, Object value)</span> </span>&#123;</span><br><span class="line">                <span class="keyword">return</span> threadAttribues.get().put(name, value);</span><br><span class="line"></span><br><span class="line">        &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="number">2</span> 在一个filter里写入request</span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">doFilter</span><span class="params">(ServletRequest req, ServletResponse resp,</span></span></span><br><span class="line"><span class="function"><span class="params">                        FilterChain chain)</span> <span class="keyword">throws</span> IOException, ServletException </span>&#123;</span><br><span class="line">                HttpServletRequest request = (HttpServletRequest) req;</span><br><span class="line">                HttpServletResponse response = (HttpServletResponse) resp;</span><br><span class="line">               </span><br><span class="line">                ThreadAttributes.setThreadAttribute(<span class="string">"request"</span>, req);</span><br><span class="line">        .....</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="number">3</span> 读取request</span><br><span class="line">HttpServletRequest request = (HttpServletRequest)ThreadAttributes.getThreadAttribute(<span class="string">"request"</span>);</span><br></pre></td></tr></table></figure>
+
+<h2 id="实现细节"><a href="#实现细节" class="headerlink" title="实现细节"></a>实现细节</h2><p>线程类Thread中有一个类属性，专门存放线程独立的变量。</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/* ThreadLocal values pertaining to this thread. This map is maintained</span></span><br><span class="line"><span class="comment"> * by the ThreadLocal class. */</span></span><br><span class="line">ThreadLocal.ThreadLocalMap threadLocals = <span class="keyword">null</span>;</span><br></pre></td></tr></table></figure>
+
+<p>ThreadLocal就是用来管理这个threadLocals属性的。也就是说我们对于<code>ThreadLocal</code>的get, set，remove的操作结果都是针对当前线程Thread实例的threadLocals存，取，删除操作。</p>
+<p><img src="/2017/12/24/2017-12-25-Java%E5%A4%9A%E7%BA%BF%E7%A8%8B%E4%B9%8BThreadLocal/image-20200407160341549.png" alt="image"></p>
+<p><strong>ThreadLocal的静态内部类ThreadLocalMap为每个Thread都维护了一个Entry数组，ThreadLocal确定了一个数组下标，而这个下标就是Entry的对应位置。</strong></p>
+<h2 id="潜在的内存泄露风险"><a href="#潜在的内存泄露风险" class="headerlink" title="潜在的内存泄露风险"></a>潜在的内存泄露风险</h2><p><strong>Memory leak:内存泄漏，程序申请内存后，无法释放已申请的内存空间，内存泄漏的堆积终将导致内存溢出。</strong></p>
+<h3 id="Java的引用类型"><a href="#Java的引用类型" class="headerlink" title="Java的引用类型"></a>Java的引用类型</h3><table>
+<thead>
+<tr>
+<th>类型</th>
+<th>回收时间</th>
+<th>应用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>强引用</td>
+<td>一直存活，除非GC Roots不可达</td>
+<td>所有程序的场景，基本对象，自定义对象等</td>
+</tr>
+<tr>
+<td>软引用</td>
+<td>内存不足时会被回收</td>
+<td>一般用在对内存非常敏感的资源上，用作缓存的场景比较多，例如：网页缓存、图片缓存</td>
+</tr>
+<tr>
+<td>弱引用</td>
+<td>只能存活到下一次GC前</td>
+<td>生命周期很短的对象，例如ThreadLocal中的Key。</td>
+</tr>
+<tr>
+<td>虚引用</td>
+<td>随时会被回收， 创建了可能很快就会被回收</td>
+<td>可能被JVM团队内部用来跟踪JVM的垃圾回收活动</td>
+</tr>
+</tbody></table>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">* The entries in this hash map extend WeakReference, using</span></span><br><span class="line"><span class="comment">* its main ref field as the key (which is always a</span></span><br><span class="line"><span class="comment">* ThreadLocal object).  Note that null keys (i.e. entry.get()</span></span><br><span class="line"><span class="comment">* == null) mean that the key is no longer referenced, so the</span></span><br><span class="line"><span class="comment">* entry can be expunged from table.  Such entries are referred to</span></span><br><span class="line"><span class="comment">* as "stale entries" in the code that follows.</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Entry</span> <span class="keyword">extends</span> <span class="title">WeakReference</span>&lt;<span class="title">ThreadLocal</span>&gt; </span>&#123;</span><br><span class="line">    <span class="comment">/** The value associated with this ThreadLocal. */</span></span><br><span class="line">    Object value;</span><br><span class="line">    Entry(ThreadLocal k, Object v) &#123;</span><br><span class="line">        <span class="keyword">super</span>(k);</span><br><span class="line">        value = v;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>为什么在这里Entry的key要使用弱引用呢？</p>
+<p>不妨反过来想想，如果使用强引用，当ThreadLocal对象（假设为ThreadLocal@123456）的引用（是一个强引用，指向ThreadLocal@123456）被回收了，ThreadLocalMap本身（线程对象中）依然还持有ThreadLocal@123456的强引用，如果没有手动删除这个key，则ThreadLocal@123456不会被回收，所以只要当前线程不消亡，ThreadLocalMap引用的那些对象就不会被回收，可以认为这导致Entry内存泄漏。</p>
+<p>那使用弱引用的好处呢？</p>
+<p>如果使用弱引用，那指向ThreadLocal@123456对象的引用就两个：TL_INT强引用，和ThreadLocalMap中Entry的弱引用。一旦TL_INT被回收，则指向ThreadLocal@123456的就只有弱引用了，在下次gc的时候，这个ThreadLocal@123456就会被回收。</p>
+<p>那么问题来了，ThreadLocal@123456对象只是作为ThreadLocalMap的一个key而存在的，现在它被回收了，但是它对应的value并没有被回收，内存泄露依然存在！而且key被删了之后，变成了null，value更是无法被访问到了！针对这一问题，ThreadLocalMap类的设计本身已经有了这一问题的解决方案，那就是在每次get()/set()/remove()ThreadLocalMap中的值的时候，会自动清理key为null的value。如此一来，value也能被回收了。</p>
+<p>既然对key使用弱引用，能使key自动回收，那为什么不对value使用弱引用？答案显而易见，假设往ThreadLocalMap里存了一个value，gc过后value便消失了，那就无法使用ThreadLocalMap来达到存储全线程变量的效果了。（但是再次访问该key的时候，依然能取到value，此时取得的value是该value的初始值。即在删除之后，如果再次访问，取到null，会重新调用初始化方法。）</p>
+<p>所以我们总结了使用ThreadLocal时会发生内存泄漏的前提条件：</p>
+<ol>
+<li><p>ThreadLocal引用被设置为null，且后面没有set，get，remove操作。</p>
+</li>
+<li><p>线程一直运行，不停止。（线程池）</p>
+</li>
+<li><p>触发了垃圾回收。（Minor GC或Full GC）</p>
+</li>
+</ol>
+<p>我们看到ThreadLocal出现内存泄漏条件还是很苛刻的，所以我们只要破坏其中一个条件就可以避免内存泄漏，但为了更好的避免这种情况的发生我们使用ThreadLocal时遵守以下两个小原则:</p>
+<ol>
+<li>ThreadLocal申明为private static final。<br>  Private与final 尽可能不让他人修改变更引用，<br>  Static 表示为类属性，只有在程序结束才会被回收。</li>
+<li>ThreadLocal使用后务必调用remove方法。<br>   最简单有效的方法是使用后将其移除。</li>
+</ol>
+]]></content>
+      <categories>
+        <category>并发编程</category>
+      </categories>
+      <tags>
+        <tag>Java</tag>
+        <tag>并发</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Java阻塞队列 - DelayQueue（延迟队列）</title>
+    <url>/2018/05/13/DelayQueue%EF%BC%88%E5%BB%B6%E8%BF%9F%E9%98%9F%E5%88%97%EF%BC%89/</url>
+    <content><![CDATA[<blockquote>
+<p>一种由延迟元素组成的无边界阻塞队列，其中一个元素只有在其延迟过期时才能被接受。队列的头是最快过期的延迟元素。如果没有延迟过期，则没有head，poll将返回null。当元素的getDelay（TimeUnit.NANOSECONDS）方法返回的值小于或等于零时，将发生过期。即使使用take或poll不能删除未过期的元素，也可以将它们视为正常元素。例如，size方法返回过期和未过期元素的计数。此队列不允许空元素（null）。</p>
+<p>这个类及其迭代器实现了集合和迭代器接口的所有可选方法。方法Iterator()中提供的迭代器不能保证以任何特定顺序遍历DelayQueue的元素。</p>
+<p>这个类是Java集合框架的成员。</p>
+<p>—- Doug Lea</p>
+</blockquote>
+<h2 id="应用场景"><a href="#应用场景" class="headerlink" title="应用场景"></a>应用场景</h2><p>在我们的业务中通常会有一些需求是这样的： </p>
+<ol>
+<li>淘宝订单业务:<code>下单之后如果三十分钟之内没有付款就自动取消订单</code>。</li>
+<li>饿了吗订餐通知:<code>下单成功后60s之后给用户发送短信通知</code>。</li>
+<li>缓存系统的设计，缓存中的对象，超过了空闲时间，需要从缓存中移出。</li>
+<li>……</li>
+</ol>
+<p>这类业务我们可以总结出一个特点:需要延迟工作。 </p>
+<p>DelayQueue可以满足这类需求。</p>
+<h2 id="实现细节"><a href="#实现细节" class="headerlink" title="实现细节"></a>实现细节</h2><p>首先，DelayQueue规则定了队列中的元素必须实现Delayed接口。</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DelayQueue</span>&lt;<span class="title">E</span> <span class="keyword">extends</span> <span class="title">Delayed</span>&gt; <span class="keyword">extends</span> <span class="title">AbstractQueue</span>&lt;<span class="title">E</span>&gt;</span></span><br><span class="line"><span class="class">    <span class="keyword">implements</span> <span class="title">BlockingQueue</span>&lt;<span class="title">E</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">transient</span> ReentrantLock lock = <span class="keyword">new</span> ReentrantLock();</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> PriorityQueue&lt;E&gt; q = <span class="keyword">new</span> PriorityQueue&lt;E&gt;();</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Condition available = lock.newCondition();</span><br><span class="line">    <span class="keyword">private</span> Thread leader = <span class="keyword">null</span>; <span class="comment">// 等待队头元素的线程</span></span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>由源码可以看出DelayQueue内部使用了优先级队列PriorityQueue来保存元素。当调用DelayQueue的offer方法时，把Delayed对象加入到优先队列q中。</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">offer</span><span class="params">(E e)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">final</span> ReentrantLock lock = <span class="keyword">this</span>.lock;</span><br><span class="line">    lock.lock();</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        q.offer(e);</span><br><span class="line">        <span class="keyword">if</span> (q.peek() == e) &#123; <span class="comment">// 如果新加入的元素是最快过期的元素</span></span><br><span class="line">            leader = <span class="keyword">null</span>;</span><br><span class="line">            available.signal(); <span class="comment">//唤醒阻塞的消费者线程</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        lock.unlock();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>DelayQueue的take方法，把优先队列q的first拿出来（peek），如果没有达到延时阀值，则进行await处理。</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> E <span class="title">take</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">    <span class="keyword">final</span> ReentrantLock lock = <span class="keyword">this</span>.lock;</span><br><span class="line">    lock.lockInterruptibly(); <span class="comment">// 调用后一直阻塞直到获得锁,但是接受中断信号</span></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">for</span> (;;) &#123; <span class="comment">// for(;;)比while(true)生成的字节码指令更少，不占用寄存器，而且没有判断跳转</span></span><br><span class="line">            E first = q.peek();</span><br><span class="line">            <span class="keyword">if</span> (first == <span class="keyword">null</span>)</span><br><span class="line">                available.await(); <span class="comment">// 如果没有元素，直接阻塞</span></span><br><span class="line">            <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="keyword">long</span> delay = first.getDelay(NANOSECONDS); <span class="comment">// 判断是否过期</span></span><br><span class="line">                <span class="keyword">if</span> (delay &lt;= <span class="number">0</span>) <span class="comment">// 如果过期了，直接弹出队头</span></span><br><span class="line">                    <span class="keyword">return</span> q.poll();</span><br><span class="line">                first = <span class="keyword">null</span>; <span class="comment">// don't retain ref while waiting</span></span><br><span class="line">                <span class="keyword">if</span> (leader != <span class="keyword">null</span>)</span><br><span class="line">                    available.await(); <span class="comment">// 如果没过期，且已经有leader在等待队头元素，则继续阻塞等待,同时释放锁</span></span><br><span class="line">                <span class="keyword">else</span> &#123;</span><br><span class="line">                    Thread thisThread = Thread.currentThread();</span><br><span class="line">                    leader = thisThread;</span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">                        available.awaitNanos(delay); <span class="comment">// 如果leader就是当前线程，则阻塞指定的延迟时间</span></span><br><span class="line">                    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                        <span class="keyword">if</span> (leader == thisThread)</span><br><span class="line">                            leader = <span class="keyword">null</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (leader == <span class="keyword">null</span> &amp;&amp; q.peek() != <span class="keyword">null</span>)</span><br><span class="line">            available.signal();</span><br><span class="line">        lock.unlock();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>DelayQueue的线程安全性是由ReentrantLock保证的。线程进入方法后会先获取锁，如果获取不到，会阻塞直至获取，如果获取到了，就会继续操作，此时如果获取的元素未过期，则本线程阻塞，一旦阻塞就会释放当前线程持有的锁。</p>
+<p>当一个线程成为leader时，它只等待下一个延迟过去，而其他线程则无限期地等待。leader线程必须在从 take() 或 poll(…) 返回之前向其他线程发出信号，除非其他线程在此期间成为引导线程。</p>
+<h2 id="代码案例"><a href="#代码案例" class="headerlink" title="代码案例"></a>代码案例</h2><p>下面以一个简单的生产者-消费者的例子来展示DelayQueue的延时处理。我们将向一个延时队列中扔进一堆延迟时间不等的任务，然后单独开启一个线程从队列中消费数据。</p>
+<p>任务对象必须实现Delayed接口。</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Task</span> <span class="keyword">implements</span> <span class="title">Delayed</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">long</span> delayTime; <span class="comment">// 多久之后执行</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">long</span> expireTime; <span class="comment">// 过期时间点</span></span><br><span class="line">    <span class="keyword">private</span> String taskName; <span class="comment">// 任务名称</span></span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Task</span><span class="params">(String taskName, <span class="keyword">long</span> delayTime)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.taskName = taskName;</span><br><span class="line">        <span class="keyword">this</span>.delayTime = delayTime;</span><br><span class="line">        <span class="keyword">this</span>.expireTime = System.nanoTime() + TimeUnit.NANOSECONDS.convert(delayTime, TimeUnit.SECONDS);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">doAction</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="keyword">this</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 重写比较方法，让队列中的元素按照过期时间来排序</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">compareTo</span><span class="params">(Delayed o)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">long</span> d = (<span class="keyword">this</span>.getDelay(TimeUnit.NANOSECONDS) - o.getDelay(TimeUnit.NANOSECONDS));</span><br><span class="line">        <span class="keyword">return</span> d &gt; <span class="number">0</span> ? <span class="number">1</span> : d &lt; <span class="number">0</span> ? -<span class="number">1</span> :<span class="number">0</span>;</span><br><span class="line">        <span class="comment">// return (int) d; 这里绝对不能使用强制转换，极易出现上限溢出后发生数据截断。导致最后排序结果不符合预期。</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">long</span> <span class="title">getDelay</span><span class="params">(TimeUnit unit)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> unit.convert(<span class="keyword">this</span>.expireTime - System.nanoTime(), TimeUnit.NANOSECONDS);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"Task:"</span> + taskName + <span class="string">" [delayTime="</span> + delayTime + <span class="string">", expireTime="</span> + expireTime + <span class="string">"]"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>测试代码如下:</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">final</span> DelayQueue&lt;Task&gt; taskQueue = <span class="keyword">new</span> DelayQueue&lt;&gt;();</span><br><span class="line">    Thread producer = <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">        </span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">int</span> i = <span class="number">1</span>;</span><br><span class="line">            <span class="keyword">while</span> (i &lt; <span class="number">10</span>) &#123;</span><br><span class="line">                taskQueue.put(<span class="keyword">new</span> Task(i + <span class="string">""</span>, i));</span><br><span class="line">                i++;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">    </span><br><span class="line">    producer.start();</span><br><span class="line">    </span><br><span class="line">    Thread consumer = <span class="keyword">new</span> Thread(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">        <span class="comment">// 消费队列中的过期元素，执行doAction</span></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">                Task task;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    task = taskQueue.take();</span><br><span class="line">                    task.doAction();</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                    e.printStackTrace();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            </span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">    </span><br><span class="line">    consumer.start();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>结果如下，各个任务依次打印：</p>
+<p><img src="/2018/05/13/DelayQueue%EF%BC%88%E5%BB%B6%E8%BF%9F%E9%98%9F%E5%88%97%EF%BC%89/image-20200513171457561.png" alt="image-20200513171457561"></p>
+<p>这里还有一个实现缓存的例子，链接如下：<br> <a href="https://link.jianshu.com?t=http://www.cnblogs.com/jobs/archive/2007/04/27/730255.html" target="_blank" rel="noopener">http://www.cnblogs.com/jobs/archive/2007/04/27/730255.html</a></p>
+<h2 id="问题总结"><a href="#问题总结" class="headerlink" title="问题总结"></a>问题总结</h2><p>在实现Delayed接口时，重写compareTo()方法是很重要的，只有compareTo()方法没有问题，才能保证队列中元素是按过期时间排序的。如果不重写，则需要传入比较器。</p>
+<p>DelayQueue中的元素可以通过remove方法移除，此时请保证equals与hashCode方法的正确性。</p>
+]]></content>
+      <categories>
+        <category>并发编程</category>
+      </categories>
+      <tags>
+        <tag>Java</tag>
+        <tag>并发</tag>
+        <tag>阻塞队列</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Spring Security - 认证授权的基本概念</title>
     <url>/2018/02/01/Spring%20Security%20-%20%E8%AE%A4%E8%AF%81%E6%8E%88%E6%9D%83%E7%9A%84%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5/</url>
     <content><![CDATA[<h2 id="一、认证"><a href="#一、认证" class="headerlink" title="一、认证"></a>一、认证</h2><p><strong>认证就是判断一个用户身份是否合法的过程。</strong></p>
@@ -674,6 +455,225 @@
       <tags>
         <tag>Spring Security</tag>
         <tag>访问控制</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Oracle下的分页查询</title>
+    <url>/2017/12/30/2017-12-30-Oracle%E4%B8%8B%E7%9A%84%E5%88%86%E9%A1%B5%E6%9F%A5%E8%AF%A2/</url>
+    <content><![CDATA[<h2 id="rownum与rowid"><a href="#rownum与rowid" class="headerlink" title="rownum与rowid"></a>rownum与rowid</h2><p>rownum与rowid都是伪列，并不存在于数据表结构定义中。</p>
+<h3 id="rownum"><a href="#rownum" class="headerlink" title="rownum"></a>rownum</h3><p>rownum是逻辑上的伪列，是在获取查询结果集后再加上去的 （获取一条记录加一个rownum）。对符合条件的结果添加一个从1开始的序列号。</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">rownum</span>,phone_no <span class="keyword">from</span> ur_user_info <span class="keyword">where</span> <span class="keyword">rownum</span> &lt; <span class="number">6</span>;</span><br></pre></td></tr></table></figure>
+
+<p><strong>特点：</strong></p>
+<p>rownum是动态的，先有查询结果，然后再给结果集添加上rownum。</p>
+<p><strong>使用误区：</strong></p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="comment">-----错误写法：</span></span><br><span class="line"><span class="keyword">select</span> <span class="keyword">rownum</span>, phone_no</span><br><span class="line">  <span class="keyword">from</span> (<span class="keyword">select</span> <span class="keyword">rownum</span> rn , phone_no <span class="keyword">from</span> ur_user_info ) a</span><br><span class="line"> <span class="keyword">where</span> a.rownum &gt; <span class="number">5</span></span><br><span class="line">   <span class="keyword">and</span> a.rownum &lt; <span class="number">10</span>;</span><br></pre></td></tr></table></figure>
+
+<p><strong>错误原因：</strong><br>当产生结果集时，oracle会产生一条rownum为1的记录，显然不符合where条件；那么就会产生第二条记录，同样rownum=1,也不符合记录；  一直下去，导致最后上述sql产生的结果集时空集。 </p>
+<p><strong>应用场景</strong></p>
+<ul>
+<li>分页查询</li>
+</ul>
+<h3 id="rowid"><a href="#rowid" class="headerlink" title="rowid"></a>rowid</h3><p>ROWID是ORACLE中的一个重要的概念。用于定位数据库中一条记录的一个相对唯一地址值。通常情况下，该值在该行数据插入到数据库表时即被确定且唯一。ROWID它是一个伪列，它并不实际存在于表中。它是ORACLE在读取表中数据行时，根据每一行数据的物理地址信息编码而成的一个伪列。所以根据一行数据的ROWID能找到一行数据的物理地址信息。从而快速地定位到数据行。数据库的大多数操作都是通过ROWID来完成的，而且使用ROWID来进行单记录定位速度是最快的。</p>
+<p>要理解索引，必须先搞清楚ROWID。</p>
+<p>rowid并不会真正存在于表的data block中,但是他会存在于index当中，用来通过rowid来寻找表中的行数据。</p>
+<p><strong>B-Tree索引</strong>的每个索引条目具有两个字段。第一个字段表示索引的键值，对于单列索引来说是一个值；而对于多列索引来说则是多个值组合在一起的。第二个字段表示键值所对应的记录行的ROWID。所以索引能加快查询速度。</p>
+<p><strong>特点：</strong></p>
+<p>rowid并未存储在表中，所以不支持增删改操作，只能用户查询。 </p>
+<p><strong>应用场景</strong></p>
+<ul>
+<li><p>去重：当多条记录主键相同或者多条记录完全一致时，只需要留下一条记录。（账单表中出现多条一样的数据）</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">delete</span> <span class="keyword">from</span> bal_acctbook_info</span><br><span class="line"> <span class="keyword">where</span> <span class="keyword">rowid</span> <span class="keyword">not</span> <span class="keyword">in</span> (<span class="keyword">select</span> <span class="keyword">min</span>(<span class="keyword">rowid</span>)</span><br><span class="line">                       <span class="keyword">from</span> bal_acctbook_info</span><br><span class="line">                      <span class="keyword">where</span> balance_id = <span class="string">'4012562452'</span></span><br><span class="line">                        <span class="keyword">and</span> op_time = <span class="string">'20171212111111'</span>);</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h2 id="分页查询的几种方式"><a href="#分页查询的几种方式" class="headerlink" title="分页查询的几种方式"></a>分页查询的几种方式</h2><h3 id="利用rownum"><a href="#利用rownum" class="headerlink" title="利用rownum"></a>利用rownum</h3><figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> *</span><br><span class="line"><span class="keyword">FROM</span> (<span class="keyword">SELECT</span> <span class="keyword">ROWNUM</span> <span class="keyword">AS</span> rowno, t.*</span><br><span class="line">      <span class="keyword">FROM</span> emp t</span><br><span class="line">      <span class="keyword">WHERE</span> hire_date <span class="keyword">BETWEEN</span> <span class="keyword">TO_DATE</span>(<span class="string">'20060501'</span>, <span class="string">'yyyymmdd'</span>)</span><br><span class="line">          <span class="keyword">AND</span> <span class="keyword">TO_DATE</span>(<span class="string">'20060731'</span>, <span class="string">'yyyymmdd'</span>)</span><br><span class="line">        <span class="keyword">AND</span> <span class="keyword">ROWNUM</span> &lt;= (page)*page_size) table_alias</span><br><span class="line"><span class="keyword">WHERE</span> table_alias.rowno &gt;= (page<span class="number">-1</span>)*page_size;</span><br></pre></td></tr></table></figure>
+
+<h3 id="利用分析函数row-number"><a href="#利用分析函数row-number" class="headerlink" title="利用分析函数row_number"></a>利用分析函数row_number</h3><figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> </span><br><span class="line">        (<span class="keyword">select</span> row_number()  <span class="keyword">over</span>(<span class="keyword">order</span> <span class="keyword">by</span> usenum <span class="keyword">desc</span>) rownumber, t.*</span><br><span class="line">           <span class="keyword">from</span> t_account t)</span><br><span class="line">        <span class="keyword">where</span> rownumber &gt;= <span class="number">10</span> <span class="keyword">and</span> rownumber &lt;= <span class="number">20</span>;</span><br></pre></td></tr></table></figure>
+
+<p>两种方法在性能上差距并不大，并不会因为用了高级函数而提升性能。</p>
+<h2 id="分页的坑"><a href="#分页的坑" class="headerlink" title="分页的坑"></a>分页的坑</h2><p>后台分页有一个不可避免的缺点，就是数据变化比较频繁会导致数据遗漏、重叠等，比如取完第1页后，后台删掉了第1页的全部数据，接下去取第2页（实际已经是之前的第3页），会漏掉原本的第2页数据。</p>
+<h3 id="分页时，数据出现重复或者排序不稳定"><a href="#分页时，数据出现重复或者排序不稳定" class="headerlink" title="分页时，数据出现重复或者排序不稳定"></a>分页时，数据出现重复或者排序不稳定</h3><p>出现重复的原因：</p>
+<p>分页时，如果没有使用order by，oracle不会进行任何排序操作，如果sql没有要求排序，oracle会顺序的从数据块中读取符合条件的数据返回到客户端。所以在没有使用排序sql的时候，分页返回的数据可能是按顺序的，也可能是杂乱无章的，这都取决与数据的存储位置。</p>
+<p>在分页查询过程中，如果数据的物理位置发生了改变，就可能会引起分页数据重复的现象。 <strong>所以，要正确使用分页查询，sql语句中必须有排序条件。</strong></p>
+<p>但是，在有排序条件的时候，仍然会出现数据重复的现象，这是为什么呢？<br>通过了解oracle的排序机理就会明白，出现这种情况的原因是因为排序列值的不唯一性。 Oracle这里使用的排序算法不具有稳定性，也就是说，对于键值相等的数据，这种算法完成排序后，不保证这些键值相等的数据保持排序前的顺序.</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> *</span><br><span class="line">  <span class="keyword">from</span> (<span class="keyword">select</span> row_.*, <span class="keyword">rownum</span> rownum_</span><br><span class="line">          <span class="keyword">from</span> (<span class="keyword">select</span> * <span class="keyword">from</span> table_name <span class="keyword">order</span> <span class="keyword">by</span> createtime) row_</span><br><span class="line">         <span class="keyword">where</span> <span class="keyword">rownum</span> &lt;= <span class="number">10</span>)</span><br><span class="line"> <span class="keyword">where</span> rownum_ &gt; <span class="number">0</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>内层结果集如果加入排序字段，比如：CREATETIME（创建日期），会发现筛选出来的结果集并不稳定，这个跟Oracle的排序机理有关系。</p>
+</blockquote>
+<h4 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h4><p>需要给sql加入排序唯一的排序字段。我们知道，排序时当有多个字段时，从左到右的排序方式进行排序，排在前面的优先级高，写法如下：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">select</span> *</span><br><span class="line">  <span class="keyword">from</span> (<span class="keyword">select</span> row_.*, <span class="keyword">rownum</span> rownum_</span><br><span class="line">          <span class="keyword">from</span> (<span class="keyword">select</span> * <span class="keyword">from</span> table_name <span class="keyword">order</span> <span class="keyword">by</span> createtime <span class="keyword">desc</span>, <span class="keyword">id</span> <span class="keyword">asc</span>) row_</span><br><span class="line">         <span class="keyword">where</span> <span class="keyword">rownum</span> &lt;= <span class="number">10</span>)</span><br><span class="line"> <span class="keyword">where</span> rownum_ &gt; <span class="number">0</span></span><br></pre></td></tr></table></figure>
+
+<p>总结：</p>
+<ul>
+<li>order by语句应当遵循条件唯一性原则，否则oracle不保证每次查询的结果集都相同。</li>
+<li>分页时，sql语句中需要有排序条件。 并且，排序条件如果没有唯一性，那么必须在后边跟上一个唯一性的条件，比如主键。</li>
+</ul>
+]]></content>
+      <categories>
+        <category>Oracle</category>
+      </categories>
+      <tags>
+        <tag>数据库</tag>
+        <tag>Oracle</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>数据库 - 事务隔离与数据库锁</title>
+    <url>/2019/12/01/%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E9%94%81/</url>
+    <content><![CDATA[<h2 id="一、什么是事务？"><a href="#一、什么是事务？" class="headerlink" title="一、什么是事务？"></a>一、什么是事务？</h2><blockquote>
+<p><strong>数据库事务</strong>（<strong>Transaction</strong>）是<a href="https://zh.wikipedia.org/wiki/数据库管理系统" target="_blank" rel="noopener">数据库管理系统</a>执行过程中的一个逻辑单位，由一个有限的<a href="https://zh.wikipedia.org/wiki/数据库" target="_blank" rel="noopener">数据库</a>操作序列构成。这些操作要么全部执行,要么全部不执行，是一个不可分割的工作单位。事务由事务开始与事务结束之间执行的全部数据库操作组成。</p>
+<p>—- <em>来自wikipedia</em></p>
+</blockquote>
+<p>例子：某人要在商店使用<a href="https://zh.wikipedia.org/wiki/電子貨幣" target="_blank" rel="noopener">电子货币</a>购买100元的东西，当中至少包括两个操作：</p>
+<ol>
+<li>该人账户减少100元</li>
+<li>商店账户增加100元</li>
+</ol>
+<p><strong>支持事务的数据库管理系统</strong>（<strong>transactional DBMS</strong>）就是要确保以上两个操作（整个“事务”）都能完成，或一起取消；否则就会出现100元平白消失或出现的情况。</p>
+<p>在 MySQL 中，事务支持是在引擎层实现的。MySQL 是一个支持多引擎的系统，但并不是所有的引擎都支持事务。比如 MySQL 原生的 MyISAM 引擎就不支持事务，这也是 MyISAM 被 InnoDB 取代的重要原因之一。</p>
+<h3 id="事务的特性（ACID）"><a href="#事务的特性（ACID）" class="headerlink" title="事务的特性（ACID）"></a>事务的特性（ACID）</h3><ul>
+<li><strong>原子性</strong><br>　　事务必须是原子工作单元；对于其数据修改，要么全都执行，要么全都不执行。通常，与某个事务关联的操作具有共同的目标，并且是相互依赖的。如果系统只执行这些操作的一个子集，则可能会破坏事务的总体目标。原子性消除了系统处理操作子集的可能性。 </li>
+<li><strong>一致性</strong><br>　　 事务在完成时，必须使所有的数据都保持一致状态。在相关数据库中，所有规则都必须应用于事务的修改，以保持所有数据的完整性。事务结束时，所有的内部<a href="http://lib.csdn.net/base/datastructure" target="_blank" rel="noopener">数据结构</a>（如 B 树索引或双向链表）都必须是正确的。某些维护一致性的责任由应用程序开发人员承担，他们必须确保应用程序已强制所有已知的完整性约束。例如，当开发用于转帐的应用程序时，应避免在转帐过程中任意移动小数点。 </li>
+<li><strong>隔离性</strong><br>　　由并发事务所作的修改必须与任何其它并发事务所作的修改隔离。事务查看数据时数据所处的状态，要么是另一并发事务修改它之前的状态，要么是另一事务修改它之后的状态，事务不会查看中间状态的数据。这称为可串行性，因为它能够重新装载起始数据，并且重播一系列事务，以使数据结束时的状态与原始事务执行的状态相同。当事务可序列化时将获得最高的隔离级别。在此级别上，从一组可并行执行的事务获得的结果与通过连续运行每个事务所获得的结果相同。由于高度隔离会限制可并行执行的事务数，所以一些应用程序降低隔离级别以换取更大的吞吐量。  </li>
+<li><strong>持久性</strong><br>　　 事务完成之后，它对于系统的影响是永久性的。</li>
+</ul>
+<h2 id="二、隔离性与隔离级别"><a href="#二、隔离性与隔离级别" class="headerlink" title="二、隔离性与隔离级别"></a>二、隔离性与隔离级别</h2><h3 id="四种隔离级别"><a href="#四种隔离级别" class="headerlink" title="四种隔离级别"></a>四种隔离级别</h3><p>当数据库上有多个事务同时执行的时候，就可能出现脏读（dirty read）、不可重复读（non-repeatable read）、幻读（phantom read）的问题，为了解决这些问题，就有了“隔离级别”的概念。</p>
+<p>在谈隔离级别之前，你首先要知道，你隔离得越严实，效率就会越低。因此很多时候，我们都要在二者之间寻找一个平衡点。SQL 标准的事务隔离级别包括：读未提交（read uncommitted）、读提交（read committed）、可重复读（repeatable read）和串行化（serializable ）。</p>
+<ul>
+<li><strong>Read Uncommitted（读取未提交）</strong><br>在该隔离级别，所有事务都可以看到其他未提交事务的执行结果。本隔离级别很少用于实际应用，因为它的性能也不比其他级别好多少。读取未提交的数据，也被称之为脏读（Dirty Read）。</li>
+<li><strong>Read Committed（读取已提交）</strong><br>这是大多数数据库系统的默认隔离级别（但不是MySQL默认的）。它满足了隔离的简单定义：一个事务只能看见已经提交事务所做的改变。这种隔离级别 也支持所谓的不可重复读（Nonrepeatable Read），因为同一事务的其他实例在该实例处理其间可能会有新的commit，所以同一select可能返回不同结果。</li>
+<li><strong>Repeatable Read（可重读）</strong><br>这是MySQL的默认事务隔离级别，它确保同一事务的多个实例在并发读取数据时，会看到同样的数据行。不过理论上，这会导致另一个棘手的问题：幻读 （Phantom Read）。简单的说，幻读指当用户读取某一范围的数据行时，另一个事务又在该范围内插入了新行，当用户再读取该范围的数据行时，会发现有新的“幻影” 行。InnoDB和Falcon存储引擎通过多版本并发控制（MVCC，Multiversion Concurrency Control）机制解决了该问题。</li>
+<li><strong>Serializable（可串行化）</strong><br>这是最高的隔离级别，它通过强制事务排序，使之不可能相互冲突，从而解决幻读问题。简言之，它是在每个读的数据行上加上共享锁。在这个级别，可能导致大量的超时现象和锁竞争。</li>
+</ul>
+<p>由不同的隔离级别导致的问题如下：</p>
+<ul>
+<li><p><strong>脏读(Drity Read)</strong>：某个事务已更新一份数据，另一个事务在此时读取了同一份数据，由于某些原因，前一个RollBack了操作，则后一个事务所读取的数据就会是不正确的。</p>
+</li>
+<li><p><strong>不可重复读(Non-repeatable read)</strong>：在一个事务的两次查询之中数据不一致，这可能是两次查询过程中间插入了一个事务更新的原有的数据。</p>
+</li>
+<li><p><strong>幻读(Phantom Read)</strong>：在一个事务的两次查询中数据笔数不一致，例如有一个事务查询了几列(Row)数据，而另一个事务却在此时插入了新的几列数据，先前的事务在接下来的查询中，就会发现有几列数据是它先前所没有的。</p>
+</li>
+</ul>
+<p>对应关系如图：</p>
+<img src="http://dl.iteye.com/upload/picture/pic/72610/af5b9c1e-4517-3df2-ad62-af25d1672d12.jpg" alt="img" style="zoom:67%;">
+
+<h3 id="事务隔离的实现（MySQL为例）"><a href="#事务隔离的实现（MySQL为例）" class="headerlink" title="事务隔离的实现（MySQL为例）"></a>事务隔离的实现（MySQL为例）</h3><p>在实现上，数据库里面会创建一个视图，访问的时候以视图的逻辑结果为准。在“可重复读”隔离级别下，这个视图是在事务启动时创建的，整个事务存在期间都用这个视图。在“读提交”隔离级别下，这个视图是在每个 SQL 语句开始执行的时候创建的。这里需要注意的是，“读未提交”隔离级别下直接返回记录上的最新值，没有视图概念；而“串行化”隔离级别下直接用加锁的方式来避免并行访问。我们可以看到在不同的隔离级别下，数据库行为是有所不同的。</p>
+<p><strong>Oracle 数据库的默认隔离级别是“读提交”，而MySQL数据库的默认隔离级别是“可重复读”。</strong>因此对于一些从 Oracle 迁移到 MySQL 的应用，为保证数据库隔离级别的一致，你一定要记得将 MySQL 的隔离级别设置为“读提交”。</p>
+<p>在 MySQL 中，实际上每条记录在更新的时候都会同时记录一条回滚操作。记录上的最新值，通过回滚操作，都可以得到前一个状态的值。假设一个值从 1 被按顺序改成了 2、3、4，在回滚日志里面就会有类似下面的记录：</p>
+<img src="https://static001.geekbang.org/resource/image/d9/ee/d9c313809e5ac148fc39feff532f0fee.png" alt="img" style="zoom:50%;">
+
+<p>当前值是 4，但是在查询这条记录的时候，不同时刻启动的事务会有不同的 read-view。如图中看到的，在视图 A、B、C 里面，这一个记录的值分别是 1、2、4，同一条记录在系统中可以存在多个版本，就是数据库的多版本并发控制（MVCC）。对于 read-view A，要得到 1，就必须将当前值依次执行图中所有的回滚操作得到。</p>
+<p>同时你会发现，即使现在有另外一个事务正在将 4 改成 5，这个事务跟 read-view A、B、C 对应的事务是不会冲突的。你一定会问，回滚日志总不能一直保留吧，什么时候删除呢？</p>
+<p>答案是，在不需要的时候才删除。也就是说，系统会判断，当没有事务再需要用到这些回滚日志时，回滚日志会被删除。什么时候才不需要了呢？就是当系统里没有比这个回滚日志更早的 read-view 的时候。</p>
+<p><strong>基于上面的说明，我们来讨论一下为什么建议你尽量不要使用长事务。</strong></p>
+<p>长事务意味着系统里面会存在很老的事务视图。由于这些事务随时可能访问数据库里面的任何数据，所以这个事务提交之前，数据库里面它可能用到的回滚记录都必须保留，这就会导致大量占用存储空间。</p>
+<p>在 MySQL 5.5 及以前的版本，回滚日志是跟数据字典一起放在 ibdata 文件里的，即使长事务最终提交，回滚段被清理，文件也不会变小。我见过数据只有 20GB，而回滚段有 200GB 的库。最终只好为了清理回滚段，重建整个库。除了对回滚段的影响，长事务还占用锁资源，也可能拖垮整个库，这个我们会在后面讲锁的时候展开。</p>
+<h2 id="三、数据库锁"><a href="#三、数据库锁" class="headerlink" title="三、数据库锁"></a>三、数据库锁</h2><blockquote>
+<p>数据库锁设计的初衷是处理并发问题。作为多用户共享的资源，当出现并发访问的时候，数据库需要合理地控制资源的访问规则。而锁就是用来实现这些访问规则的重要数据结构。</p>
+</blockquote>
+<p>数据库中锁的种类有很多，根据不同的划分标准，可以分为不同的种类，也因此衍生出了各种关于锁的专业名词，如果没捋清这其中的关系，很容易陷入术语的漩涡，最后弄得一头雾水。</p>
+<p>所以我在这里先摆张从网上找的关系图，先让大家对锁有个整体上的认识，不至于犯嘀咕。</p>
+<img src="http://raw.githubusercontent.com/IMWYY/AboutMyself/master/picBed/Screenshot1520500121.png" alt="img" style="zoom:100%;">
+
+<h3 id="悲观锁与乐观锁"><a href="#悲观锁与乐观锁" class="headerlink" title="悲观锁与乐观锁"></a>悲观锁与乐观锁</h3><p><strong>悲观锁</strong></p>
+<p>悲观锁，正如其名，它指的是对数据被外界（包括本系统当前的其他事务，以及来自外部系统的事务处理）修改持保守态度，因此，在整个数据处理过程中，将数据处于锁定状态。悲观锁的实现，往往依靠数据库提供的锁机制（也只有数据库层提供的锁机制才能真正保证数据访问的排他性，否则，即使在本系统中实现了加锁机制，也无法保证外部系统不会修改数据）。</p>
+<ol>
+<li><p>使用悲观锁，我们必须关闭mysql数据库的自动提交属性，采用手动提交事务的方式，因为MySQL默认使用autocommit模式，也就是说，当你执行一个更新操作后，MySQL会立刻将结果进行提交。</p>
+</li>
+<li><p>需要注意的是，在事务中，只有SELECT … FOR UPDATE 或LOCK IN SHARE MODE 同一笔数据时会等待其它事务结束后才执行，一般SELECT … 则不受此影响。对于UPDATE、DELETE和INSERT语句，InnoDB会自动给涉及数据集加排他锁（X)。</p>
+</li>
+<li><p>补充：MySQL中select…for update的Row Lock与Table Lock</p>
+<p>使用select…for update会把数据给锁住，不过我们需要注意一些锁的级别，MySQL InnoDB默认Row-Level Lock，所以只有明确地指定主键（或有索引的地方），MySQL 才会执行Row lock (只锁住被选取的数据) ，否则MySQL 将会执行Table Lock (将整个数据表单给锁住)。</p>
+</li>
+</ol>
+<p><strong>乐观锁</strong></p>
+<p>乐观锁（ Optimistic Locking ） 相对悲观锁而言，乐观锁假设认为数据一般情况下不会造成冲突，所以在数据进行提交更新的时候，才会正式对数据的冲突与否进行检测，如果发现冲突了，则让返回用户错误的信息，让用户决定如何去做（<strong>一般是回滚事务</strong>）。那么我们如何实现乐观锁呢，一般来说有以下2种方式：</p>
+<ol>
+<li>使用数据版本（Version）记录机制实现，这是乐观锁最常用的一种实现方式。何谓数据版本？即为数据增加一个版本标识，一般是通过为数据库表增加一个数字类型的 “version” 字段来实现。当读取数据时，将version字段的值一同读出，数据每更新一次，对此version值加一。当我们提交更新的时候，判断数据库表对应记录的当前版本信息与第一次取出来的version值进行比对，如果数据库表当前版本号与第一次取出来的version值相等，则予以更新，否则认为是过期数据。</li>
+<li>乐观锁定的第二种实现方式和第一种差不多，同样是在需要乐观锁控制的table中增加一个字段，名称无所谓，字段类型使用时间戳（timestamp）, 和上面的version类似，也是在更新提交的时候检查当前数据库中数据的时间戳和自己更新前取到的时间戳进行对比，如果一致则OK，否则就是版本冲突。</li>
+</ol>
+<p><strong>总结：</strong></p>
+<p>两种锁各有优缺点，不可认为一种好于另一种，像乐观锁适用于写比较少的情况下，即冲突真的很少发生的时候，这样可以省去了锁的开销，加大了系统的整个吞吐量。但如果经常产生冲突，上层应用会不断的进行retry，这样反倒是降低了性能，所以这种情况下用悲观锁就比较合适。</p>
+<p>另外，高并发情况下个人认为乐观锁要好于悲观锁，因为悲观锁的机制使得各个线程等待时间过长，极其影响效率，乐观锁可以在一定程度上提高并发度。</p>
+<h3 id="共享锁与排他锁"><a href="#共享锁与排他锁" class="headerlink" title="共享锁与排他锁"></a>共享锁与排他锁</h3><p>共享锁（又称<strong>读锁</strong>）、排它锁（又称<strong>写锁</strong>）。</p>
+<p><strong>共享锁（S）</strong></p>
+<ul>
+<li><p>加锁与解锁：当一个事务执行select语句时，数据库系统会为这个事务分配一把共享锁，来锁定被查询的数据。在默认情况下，数据被读取后，数据库系统立即解除共享锁。例如，当一个事务执行查询“SELECT * FROM accounts”语句时，数据库系统首先锁定第一行，读取之后，解除对第一行的锁定，然后锁定第二行。这样，在一个事务读操作过程中，允许其他事务同时更新accounts表中未锁定的行。</p>
+</li>
+<li><p>兼容性：如果数据资源上放置了共享锁，还能再放置共享锁和更新锁。</p>
+</li>
+<li><p>并发性能：具有良好的并发性能，当数据被放置共享锁后，还可以再放置共享锁或更新锁。所以并发性能很好。</p>
+</li>
+</ul>
+<p><strong>排他锁（X）</strong></p>
+<ul>
+<li><p>加锁与解锁：当一个事务执行insert、update、select … for update或delete语句时，数据库系统会自动对SQL语句操纵的数据资源使用独占锁。如果该数据资源已经有其他锁（任何锁）存在时，就无法对其再放置独占锁了。</p>
+</li>
+<li><p>兼容性：独占锁不能和其他锁兼容，如果数据资源上已经加了独占锁，就不能再放置其他的锁了。同样，如果数据资源上已经放置了其他锁，那么也就不能再放置独占锁了。</p>
+</li>
+<li><p>并发性能：最差。只允许一个事务访问锁定的数据，如果其他事务也需要访问该数据，就必须等待。</p>
+</li>
+</ul>
+<h3 id="意向锁"><a href="#意向锁" class="headerlink" title="意向锁"></a>意向锁</h3><p>知乎上有个解释十分形象，如下：</p>
+<ol>
+<li><p>在MySQL中有表锁，读锁锁表，会阻塞其他事务修改表数据。写锁锁表，会阻塞其他事务读和写。</p>
+</li>
+<li><p>InnoDB引擎又支持行锁，行锁分为共享锁，一个事务对一行的共享只读锁。排它锁，一个事务对一行的排他读写锁。</p>
+</li>
+<li><p>这两种类型的锁共存的问题。考虑这个例子：事务A锁住了表中的一行，让这一行只能读，不能写。之后，事务B申请整个表的写锁。如果事务B申请成功，那么理论上它就能修改表中的任意一行，这与A持有的行锁是冲突的。数据库需要避免这种冲突，就是说要让B的申请被阻塞，直到A释放了行锁。</p>
+</li>
+</ol>
+<p>数据库要怎么判断这个冲突呢？</p>
+<ul>
+<li>step1：判断表是否已被其他事务用表锁锁表</li>
+<li>step2：判断表中的每一行是否已被行锁锁住。</li>
+</ul>
+<p>注意step2，这样的判断方法效率实在不高，因为需要遍历整个表。于是就有了意向锁。在意向锁存在的情况下，事务A必须先申请表的意向共享锁，成功后再申请一行的行锁。</p>
+<p>在意向锁存在的情况下，上面的判断可以改成</p>
+<ul>
+<li>step1：不变</li>
+<li>step2：发现表上有意向共享锁，说明表中有些行被共享行锁锁住了，因此，事务B申请表的写锁会被阻塞。</li>
+</ul>
+<p>注意：申请意向锁的动作是数据库完成的，就是说，事务A申请一行的行锁的时候，数据库会自动先开始申请表的意向锁，不需要我们程序员使用代码来申请。</p>
+<h3 id="怎么减少行锁对性能的影响？"><a href="#怎么减少行锁对性能的影响？" class="headerlink" title="怎么减少行锁对性能的影响？"></a>怎么减少行锁对性能的影响？</h3><p>先给你举个例子。在下面的操作序列中，事务 B 的 update 语句执行时会是什么现象呢？假设字段 id 是表 t 的主键。</p>
+<img src="https://static001.geekbang.org/resource/image/51/10/51f501f718e420244b0a2ec2ce858710.jpg" alt="img" style="zoom:50%;">
+
+<p>这个问题的结论取决于事务 A 在执行完两条 update 语句后，持有哪些锁，以及在什么时候释放。你可以验证一下：实际上事务 B 的 update 语句会被阻塞，直到事务 A 执行 commit 之后，事务 B 才能继续执行。</p>
+<p>知道了这个答案，你一定知道了事务 A 持有的两个记录的行锁，都是在 <strong>commit 的时候才释放的</strong>。</p>
+<p>也就是说，<strong>在 InnoDB 事务中，行锁是在需要的时候才加上的，但并不是不需要了就立刻释放，而是要等到事务结束时才释放。这个就是两阶段锁协议</strong>。</p>
+<p>知道了这个设定，对我们使用事务有什么帮助呢？那就是，<strong>如果你的事务中需要锁多个行，要把最可能造成锁冲突、最可能影响并发度的锁尽量往后放</strong>。</p>
+<h3 id="死锁和死锁检测"><a href="#死锁和死锁检测" class="headerlink" title="死锁和死锁检测"></a>死锁和死锁检测</h3><p>当并发系统中不同线程出现循环资源依赖，涉及的线程都在等待别的线程释放资源时，就会导致这几个线程都进入无限等待的状态，称为死锁。这里我用数据库中的行锁举个例子。</p>
+<img src="https://static001.geekbang.org/resource/image/4d/52/4d0eeec7b136371b79248a0aed005a52.jpg" alt="img" style="zoom:50%;">
+
+<p>这时候，事务 A 在等待事务 B 释放 id=2 的行锁，而事务 B 在等待事务 A 释放 id=1 的行锁。 事务 A 和事务 B 在互相等待对方的资源释放，就是进入了死锁状态。当出现死锁以后，有两种策略：</p>
+<ul>
+<li>一种策略是，直接进入等待，直到超时。这个超时时间可以通过参数 innodb_lock_wait_timeout 来设置。</li>
+<li>另一种策略是，发起死锁检测，发现死锁后，主动回滚死锁链条中的某一个事务，让其他事务得以继续执行。将参数 innodb_deadlock_detect 设置为 on，表示开启这个逻辑。</li>
+</ul>
+<p>在 InnoDB 中，innodb_lock_wait_timeout 的默认值是 50s，意味着如果采用第一个策略，当出现死锁以后，第一个被锁住的线程要过 50s 才会超时退出，然后其他线程才有可能继续执行。对于在线服务来说，这个等待时间往往是无法接受的。</p>
+<p>但是，我们又不可能直接把这个时间设置成一个很小的值，比如 1s。这样当出现死锁的时候，确实很快就可以解开，但如果不是死锁，而是简单的锁等待呢？所以，超时时间设置太短的话，会出现很多误伤。</p>
+<p>所以，正常情况下我们还是要采用第二种策略，即：<strong>主动死锁检测</strong>，而且 innodb_deadlock_detect 的默认值本身就是 on。主动死锁检测在发生死锁的时候，是能够快速发现并进行处理的，但是它也是有额外负担的。</p>
+<p>你可以想象一下这个过程：</p>
+<p>每当一个事务被锁的时候，就要看看它所依赖的线程有没有被别人锁住，如此循环，最后判断是否出现了循环等待，也就是死锁。那如果是我们上面说到的所有事务都要更新同一行的场景呢？每个新来的被堵住的线程，都要判断会不会由于自己的加入导致了死锁，这是一个时间复杂度是 O(n) 的操作。</p>
+<p>假设有 1000 个并发线程要同时更新同一行，那么死锁检测操作就是 100 万这个量级的。虽然最终检测的结果是没有死锁，但是这期间要消耗大量的 CPU 资源。因此，你就会看到 CPU 利用率很高，但是每秒却执行不了几个事务。根据上面的分析，我们来讨论一下，怎么解决由这种热点行更新导致的性能问题呢？问题的症结在于，死锁检测要耗费大量的 CPU 资源。</p>
+<p><strong>解决方案</strong></p>
+<ul>
+<li><p>一种头痛医头的方法，就是如果你能确保这个业务一定不会出现死锁，可以临时把死锁检测关掉。但是这种操作本身带有一定的风险，因为业务设计的时候一般不会把死锁当做一个严重错误，毕竟出现死锁了，就回滚，然后通过业务重试一般就没问题了，这是业务无损的。而关掉死锁检测意味着可能会出现大量的超时，这是业务有损的。</p>
+</li>
+<li><p>另一个思路是控制并发度。根据上面的分析，你会发现如果并发能够控制住，比如同一行同时最多只有 10 个线程在更新，那么死锁检测的成本很低，就不会出现这个问题。一个直接的想法就是，在客户端做并发控制。但是，你会很快发现这个方法不太可行，因为客户端很多。我见过一个应用，有 600 个客户端，这样即使每个客户端控制到只有 5 个并发线程，汇总到数据库服务端以后，峰值并发数也可能要达到 3000。</p>
+<p>因此，这个并发控制要做在数据库服务端。如果你有中间件，可以考虑在中间件实现；如果你的团队有能修改 MySQL 源码的人，也可以做在 MySQL 里面。基本思路就是，对于相同行的更新，在进入引擎之前排队。这样在 InnoDB 内部就不会有大量的死锁检测工作了。</p>
+</li>
+<li><p>可以考虑通过将一行改成逻辑上的多行来减少锁冲突。还是以影院账户为例，可以考虑放在多条记录上，比如 10 个记录，影院的账户总额等于这 10 个记录的值的总和。这样每次要给影院账户加金额的时候，随机选其中一条记录来加。这样每次冲突概率变成原来的 1/10，可以减少锁等待个数，也就减少了死锁检测的 CPU 消耗。这个方案看上去是无损的，但其实这类方案需要根据业务逻辑做详细设计。如果账户余额可能会减少，比如退票逻辑，那么这时候就需要考虑当一部分行记录变成 0 的时候，代码要有特殊处理。</p>
+</li>
+</ul>
+]]></content>
+      <categories>
+        <category>数据库</category>
+      </categories>
+      <tags>
+        <tag>数据库</tag>
       </tags>
   </entry>
 </search>
