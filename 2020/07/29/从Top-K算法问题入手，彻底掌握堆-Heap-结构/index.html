@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+  
+  
+    
+    
+  <script src="/lib/pace/pace.min.js?v=1.0.2"></script>
+  <link href="/lib/pace/pace-theme-minimal.min.css?v=1.0.2" rel="stylesheet">
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Top K,堆排序," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Top K问题是大数据和算法面试中最常遇到的问题之一。这个问题能很好的考验程序员对数据结构的理解，最近重修算法，借此机会，对这个问题作一个总结，除了解决Top K问题，我还将深入解读Top K算法背后的最大功臣 — 堆（Heap），并通过分析堆排序算法的性能来介绍计算机领域中一个重要概念 - 局部性原理。  什么是Top K问题？一般来讲，Top K问题常以如下形式出现的：  统计本月下载量前十">
+<meta property="og:type" content="article">
+<meta property="og:title" content="从Top K算法问题入手，彻底掌握堆(Heap)结构">
+<meta property="og:url" content="http://makunpeng.github.io/2020/07/29/%E4%BB%8ETop-K%E7%AE%97%E6%B3%95%E9%97%AE%E9%A2%98%E5%85%A5%E6%89%8B%EF%BC%8C%E5%BD%BB%E5%BA%95%E6%8E%8C%E6%8F%A1%E5%A0%86-Heap-%E7%BB%93%E6%9E%84/index.html">
+<meta property="og:site_name" content="KunPeng&#39;s Notes">
+<meta property="og:description" content="Top K问题是大数据和算法面试中最常遇到的问题之一。这个问题能很好的考验程序员对数据结构的理解，最近重修算法，借此机会，对这个问题作一个总结，除了解决Top K问题，我还将深入解读Top K算法背后的最大功臣 — 堆（Heap），并通过分析堆排序算法的性能来介绍计算机领域中一个重要概念 - 局部性原理。  什么是Top K问题？一般来讲，Top K问题常以如下形式出现的：  统计本月下载量前十">
+<meta property="og:image" content="http://makunpeng.github.io/2020/07/29/%E4%BB%8ETop-K%E7%AE%97%E6%B3%95%E9%97%AE%E9%A2%98%E5%85%A5%E6%89%8B%EF%BC%8C%E5%BD%BB%E5%BA%95%E6%8E%8C%E6%8F%A1%E5%A0%86-Heap-%E7%BB%93%E6%9E%84/image-20200720140013531.png">
+<meta property="og:image" content="http://makunpeng.github.io/2020/07/29/%E4%BB%8ETop-K%E7%AE%97%E6%B3%95%E9%97%AE%E9%A2%98%E5%85%A5%E6%89%8B%EF%BC%8C%E5%BD%BB%E5%BA%95%E6%8E%8C%E6%8F%A1%E5%A0%86-Heap-%E7%BB%93%E6%9E%84/image-20200720140123458.png">
+<meta property="og:image" content="http://makunpeng.github.io/2020/07/29/%E4%BB%8ETop-K%E7%AE%97%E6%B3%95%E9%97%AE%E9%A2%98%E5%85%A5%E6%89%8B%EF%BC%8C%E5%BD%BB%E5%BA%95%E6%8E%8C%E6%8F%A1%E5%A0%86-Heap-%E7%BB%93%E6%9E%84/image-20200720140622803.png">
+<meta property="og:image" content="http://makunpeng.github.io/2020/07/29/%E4%BB%8ETop-K%E7%AE%97%E6%B3%95%E9%97%AE%E9%A2%98%E5%85%A5%E6%89%8B%EF%BC%8C%E5%BD%BB%E5%BA%95%E6%8E%8C%E6%8F%A1%E5%A0%86-Heap-%E7%BB%93%E6%9E%84/image-20200720140825613.png">
+<meta property="og:image" content="http://makunpeng.github.io/2020/07/29/%E4%BB%8ETop-K%E7%AE%97%E6%B3%95%E9%97%AE%E9%A2%98%E5%85%A5%E6%89%8B%EF%BC%8C%E5%BD%BB%E5%BA%95%E6%8E%8C%E6%8F%A1%E5%A0%86-Heap-%E7%BB%93%E6%9E%84/Sorting_heapsort_anim.gif">
+<meta property="article:published_time" content="2020-07-29T09:46:59.000Z">
+<meta property="article:modified_time" content="2020-07-29T09:53:50.452Z">
+<meta property="article:author" content="KunPeng">
+<meta property="article:tag" content="Top K">
+<meta property="article:tag" content="堆排序">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://makunpeng.github.io/2020/07/29/%E4%BB%8ETop-K%E7%AE%97%E6%B3%95%E9%97%AE%E9%A2%98%E5%85%A5%E6%89%8B%EF%BC%8C%E5%BD%BB%E5%BA%95%E6%8E%8C%E6%8F%A1%E5%A0%86-Heap-%E7%BB%93%E6%9E%84/image-20200720140013531.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"always","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://makunpeng.github.io/2020/07/29/从Top-K算法问题入手，彻底掌握堆-Heap-结构/"/>
+
+
+
+
+
+  <title>从Top K算法问题入手，彻底掌握堆(Heap)结构 | KunPeng's Notes</title>
+  
+
+
+
+
+
+  <script type="text/javascript">
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1f002487c59cd0cee159dd59426f9196";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">KunPeng's Notes</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br />
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off"
+             placeholder="搜索..." spellcheck="false"
+             type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://makunpeng.github.io/2020/07/29/%E4%BB%8ETop-K%E7%AE%97%E6%B3%95%E9%97%AE%E9%A2%98%E5%85%A5%E6%89%8B%EF%BC%8C%E5%BD%BB%E5%BA%95%E6%8E%8C%E6%8F%A1%E5%A0%86-Heap-%E7%BB%93%E6%9E%84/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="KunPeng">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/touxiang.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="KunPeng's Notes">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">从Top K算法问题入手，彻底掌握堆(Heap)结构</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-07-29T17:46:59+08:00">
+                2020-07-29
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/" itemprop="url" rel="index">
+                    <span itemprop="name">数据结构</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2020/07/29/%E4%BB%8ETop-K%E7%AE%97%E6%B3%95%E9%97%AE%E9%A2%98%E5%85%A5%E6%89%8B%EF%BC%8C%E5%BD%BB%E5%BA%95%E6%8E%8C%E6%8F%A1%E5%A0%86-Heap-%E7%BB%93%E6%9E%84/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count valine-comment-count" data-xid="/2020/07/29/%E4%BB%8ETop-K%E7%AE%97%E6%B3%95%E9%97%AE%E9%A2%98%E5%85%A5%E6%89%8B%EF%BC%8C%E5%BD%BB%E5%BA%95%E6%8E%8C%E6%8F%A1%E5%A0%86-Heap-%E7%BB%93%E6%9E%84/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+             <span id="/2020/07/29/%E4%BB%8ETop-K%E7%AE%97%E6%B3%95%E9%97%AE%E9%A2%98%E5%85%A5%E6%89%8B%EF%BC%8C%E5%BD%BB%E5%BA%95%E6%8E%8C%E6%8F%A1%E5%A0%86-Heap-%E7%BB%93%E6%9E%84/" class="leancloud_visitors" data-flag-title="从Top K算法问题入手，彻底掌握堆(Heap)结构">
+               <span class="post-meta-divider">|</span>
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               
+                 <span class="post-meta-item-text">阅读次数&#58;</span>
+               
+                 <span class="leancloud-visitors-count"></span>
+             </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <blockquote>
+<p>Top K问题是大数据和算法面试中最常遇到的问题之一。这个问题能很好的考验程序员对数据结构的理解，最近重修算法，借此机会，对这个问题作一个总结，除了解决Top K问题，我还将深入解读Top K算法背后的最大功臣 — 堆（Heap），并通过分析堆排序算法的性能来介绍计算机领域中一个重要概念 - 局部性原理。</p>
+</blockquote>
+<h2 id="什么是Top-K问题？"><a href="#什么是Top-K问题？" class="headerlink" title="什么是Top K问题？"></a>什么是Top K问题？</h2><p>一般来讲，Top K问题常以如下形式出现的：</p>
+<ul>
+<li>统计本月下载量前十的应用</li>
+<li>统计本周用户搜索最多的前二十个关键词</li>
+<li>统计一个小时内点击量前十的小说</li>
+</ul>
+<p>用户也好，关键词也好，将上述问题用编程语言抽象为一个统一的描述就是：<strong>给定一份未排序的数据，返回其中前K大元素。</strong></p>
+<h3 id="如何解决？"><a href="#如何解决？" class="headerlink" title="如何解决？"></a>如何解决？</h3><p>我们可以将未排序的数据简化为一个无序数组。那么一个常见的做法就是我们先对这个数组进行排序，然后返回第K大元素。如果使用<strong>快速排序</strong>，这样的解法平均时间复杂度需要 <code>O(N*logN)</code>。乍一看好像还不错，但是仔细分析就能发现这其中的问题。<strong>快速排序</strong>在这个场景下的弊端在于：我们只想要排名前十的数据，但快排每次都会把所有数据全都处理一遍，即使你不需要前十之后的排名。也就是说，这个解决方案浪费了一部分不必要的算力。</p>
+<p>这肯定不是面试官想要的答案，要真是这种程度的答案，那这应该是给大一新生的课后作业。</p>
+<p>稍加动脑我们就能想出一个另一个看上去也不错的方案，我们将前K个元素单独存储起来，就用一个长度为K的数组，称为ArrayK。这样我们就不再需要排序整个数组，在循环整份数据时，只需将其中的元素与ArrayK中的元素进行比较，如果待比较元素比ArrayK中某一个元素大，就替换该元素，最后只对ArrayK排序一次即可。</p>
+<p>那么这个方案的时间复杂度大致是多少呢？</p>
+<p>如果最坏情况下每次都需要与ArrayK中的每一个元素进行比较，大致需要<code>O((N-K)*K + K*logK)</code>，忽略掉常数项，即<code>O(N*K)</code>。</p>
+<h3 id="是否可以做得更好？"><a href="#是否可以做得更好？" class="headerlink" title="是否可以做得更好？"></a>是否可以做得更好？</h3><p>答案是可以。</p>
+<p>上面利用数组的解法还是很low的，但我们已经很接近答案了，ArrayK解决方案的问题在于元素比较次数过多。我们需要一种数据结构，它可以使我们在一堆数据里找最大最小值时比数组更加高效。</p>
+<p>这时，<strong>堆</strong>就可以闪亮登场了。</p>
+<h2 id="堆（Heap）"><a href="#堆（Heap）" class="headerlink" title="堆（Heap）"></a>堆（Heap）</h2><h3 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h3><p>堆是一种特殊的完全二叉树。堆始于<a href="https://zh.wikipedia.org/w/index.php?title=J._W._J._Williams&action=edit&redlink=1" target="_blank" rel="noopener">J. W. J. Williams</a>在1964年发表的<strong>堆排序</strong>（heap sort），当时他提出了二叉堆树作为此算法的数据结构。堆满足以下特性：</p>
+<ul>
+<li>任意节点小于（或大于）它的所有后裔，最小元（或最大元）在堆的根上（<strong>堆序性</strong>）。</li>
+<li>堆总是一棵<a href="https://zh.wikipedia.org/wiki/完全二叉树" target="_blank" rel="noopener">完全树</a>。即除了最底层，其他层的节点都被元素填满，且最底层尽可能地从左到右填入。</li>
+</ul>
+<p><img src="/2020/07/29/%E4%BB%8ETop-K%E7%AE%97%E6%B3%95%E9%97%AE%E9%A2%98%E5%85%A5%E6%89%8B%EF%BC%8C%E5%BD%BB%E5%BA%95%E6%8E%8C%E6%8F%A1%E5%A0%86-Heap-%E7%BB%93%E6%9E%84/image-20200720140013531.png" alt="image-20200720140013531.png"></p>
+<p>堆分两种：</p>
+<ul>
+<li>父节点总是大于等于子节点的堆称为“<code>最大堆/大顶堆</code>”，此时根节点是最大的。</li>
+<li>父节点总是小于等于子节点的堆称为“<code>最小堆/小顶堆</code>”，此时根节点是最小的。</li>
+</ul>
+<p>这个数据结构的重点在于，<strong>根节点永远都是最大/最小值</strong>，所以我们可以很方便的通过获取根节点的方式来获取堆中元素的最大/最小值。父节点永远大于等于（小于等于）子节点，左右子节点的大小顺序没有规定，我们只要保证父比子大（小）即可。</p>
+<h3 id="节点关系"><a href="#节点关系" class="headerlink" title="节点关系"></a>节点关系</h3><p>根据完全二叉树的性质，父节点与子节点的下标位置可以通过数学关系严格定义。其关系如下：</p>
+<ul>
+<li>假如父节点下标为k，则其左子节点下标为2k，右子节点下标为2K+1。</li>
+</ul>
+<h4 id="数学证明"><a href="#数学证明" class="headerlink" title="数学证明"></a>数学证明</h4><p><em>注：不感兴趣的同学完全可以跳过这部分。</em></p>
+<p>可将堆看作一个公比为2的等比数列，根据求和公式，可得前n层元素个数为：<br>$$<br>S_n=\frac{1\times(1-2^n)}{1-2} = 2^n-1<br>$$</p>
+<p>设父节点为第k层第m个节点，则其下标可表示为：<br>$$<br>parent = 2^{k-1} + m - 1<br>$$<br>其左右子节点下标为：<br>$$<br>left = 2^k + 2 \times (m-1)\<br>right = left + 1 = 2^k + 2 \times (m-1) + 1<br>$$<br>可得关系表达式：<br>$$<br>left = 2 \times parent \<br>right = 2 \times parent + 1<br>$$</p>
+<h3 id="代码实现（Java）-以最大堆为例"><a href="#代码实现（Java）-以最大堆为例" class="headerlink" title="代码实现（Java）- 以最大堆为例"></a>代码实现（Java）- 以最大堆为例</h3><p>首先要考虑的就是存储结构的选择，堆是一个完全二叉树，子节点与父节点的位置关系可以通过数学公式定义，而且堆的操作中，几乎不存在向数据中间直接塞元素的行为，所以线性存储结构、支持随机读取（Random Access）的数组是最好的选择。</p>
+<p>堆的定义代码如下，这里将提供<strong>泛型</strong>方案的实现。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MaxHeap</span>&lt;<span class="title">T</span> <span class="keyword">extends</span> <span class="title">Comparable</span>&lt;<span class="title">T</span>&gt;&gt; </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> capacity; <span class="comment">// 最大容量</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> size = <span class="number">0</span>; <span class="comment">// 堆中元素个数</span></span><br><span class="line">    <span class="keyword">private</span> Object[] array;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">MaxHeap</span><span class="params">(<span class="keyword">int</span> capacity)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.capacity = capacity;</span><br><span class="line">        <span class="keyword">this</span>.array = <span class="keyword">new</span> Object[capacity];</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 交换数组中索引为i、j的值</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> array2</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> i</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> j</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">swap</span><span class="params">(Object[] array2, <span class="keyword">int</span> i, <span class="keyword">int</span> j)</span> </span>&#123;</span><br><span class="line">        Object temp = array2[i];</span><br><span class="line">        array2[i] = array2[j];</span><br><span class="line">        array2[j] = temp;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 获取索引位置为i的元素的父节点的索引位置</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> i</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">int</span> <span class="title">parent</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> (i - <span class="number">1</span>) / <span class="number">2</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 返回索引位置为i的元素的左子节点位置</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> i</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">int</span> <span class="title">leftChild</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> (<span class="number">2</span> * i) + <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 返回索引位置为i的元素的右子节点位置</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> i</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">int</span> <span class="title">rightChild</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> (<span class="number">2</span> * i) + <span class="number">2</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>由于堆中元素需要比较大小，所以要求参数类型必须实现Comparable接口，更推荐的作法是不强制要求实现Comparable接口，而是提供一个可以传入比较器的构造函数，在这里为了编码方便我们采取第一种方案。</p>
+<h4 id="插入方法（Insert）"><a href="#插入方法（Insert）" class="headerlink" title="插入方法（Insert）"></a>插入方法（Insert）</h4><p>每次插入操作都是将元素插入到数组末尾，然后再与对应的父节点进行比较。整个过程比较简单。</p>
+<ul>
+<li>最坏情况下比较次数等于树高，故时间复杂度：<code>O(logN)</code></li>
+</ul>
+<p>代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 插入步骤：</span></span><br><span class="line"><span class="comment"> * 1. 在堆的最后新建一个节点并赋值</span></span><br><span class="line"><span class="comment"> * 2. 新节点与父节点比较</span></span><br><span class="line"><span class="comment"> * 3. 如果新节点的数值比父节点大，调换父子节点的位置</span></span><br><span class="line"><span class="comment"> * 4. 重复2、3步，直到最大堆的特性被满足</span></span><br><span class="line"><span class="comment"> *   </span></span><br><span class="line"><span class="comment"> * 时间复杂度：O(logN)</span></span><br><span class="line"><span class="comment"> * </span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> item</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@SuppressWarnings</span>(<span class="string">"unchecked"</span>)</span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">insert</span><span class="params">(T item)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (size == capacity) &#123;</span><br><span class="line">         array = Arrays.copyOf(array, capacity * <span class="number">1.5</span>);</span><br><span class="line">         capacity = <span class="number">2</span> * capacity;</span><br><span class="line">         <span class="comment">// throw new IllegalStateException("插入失败，堆中元素数目已达到最大值");</span></span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 添加至数组末尾</span></span><br><span class="line">    array[size] = item;</span><br><span class="line">    size++;</span><br><span class="line">    <span class="comment">// 如果新节点的数值比父节点大，调换父子节点的位置</span></span><br><span class="line">    <span class="keyword">int</span> index = size - <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">while</span> (index &gt; <span class="number">0</span> &amp;&amp; item.compareTo((T) array[parent(index)]) &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        swap(array, index, parent(index));</span><br><span class="line">        index = parent(index);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="取根元素（Poll）"><a href="#取根元素（Poll）" class="headerlink" title="取根元素（Poll）"></a>取根元素（Poll）</h4><p>Poll操作要比Insert复杂一些，直接删除根节点后必须有元素补位，我们让数组中最后一个元素，也就是最小元素代替根节点的位置。这时可能已经不满足最大堆父节点大于等于子节点的性质了，所以需要调整堆结构。</p>
+<ul>
+<li>与插入操作相同，最坏情况下比较次数等于树高，故时间复杂度：<code>O(logN)</code></li>
+</ul>
+<p>以下图为例，现在我们要将堆中最大值即大小为90的根节点移除。</p>
+<p><img src="/2020/07/29/%E4%BB%8ETop-K%E7%AE%97%E6%B3%95%E9%97%AE%E9%A2%98%E5%85%A5%E6%89%8B%EF%BC%8C%E5%BD%BB%E5%BA%95%E6%8E%8C%E6%8F%A1%E5%A0%86-Heap-%E7%BB%93%E6%9E%84/image-20200720140123458.png" alt="image-20200720140123458.png"></p>
+<p>用最小节点32替换原先的根节点。</p>
+<p><img src="/2020/07/29/%E4%BB%8ETop-K%E7%AE%97%E6%B3%95%E9%97%AE%E9%A2%98%E5%85%A5%E6%89%8B%EF%BC%8C%E5%BD%BB%E5%BA%95%E6%8E%8C%E6%8F%A1%E5%A0%86-Heap-%E7%BB%93%E6%9E%84/image-20200720140622803.png" alt="image-20200720140622803.png"></p>
+<p>接下来调整堆结构，将32与子节点中较大者（此处为73）比较，如果比这个较大值要小，则交换位置。直到满足最大堆性质，此处的循环可用递归或while实现。</p>
+<p><img src="/2020/07/29/%E4%BB%8ETop-K%E7%AE%97%E6%B3%95%E9%97%AE%E9%A2%98%E5%85%A5%E6%89%8B%EF%BC%8C%E5%BD%BB%E5%BA%95%E6%8E%8C%E6%8F%A1%E5%A0%86-Heap-%E7%BB%93%E6%9E%84/image-20200720140825613.png" alt="image-20200720140825613.png"></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 取出根节点</span></span><br><span class="line"><span class="comment"> * </span></span><br><span class="line"><span class="comment"> * 1. 移除根节点</span></span><br><span class="line"><span class="comment"> * 2. 将最后位置的节点移置根节点处</span></span><br><span class="line"><span class="comment"> * 3. 将子节点和父节点作比较</span></span><br><span class="line"><span class="comment"> * 4. 如果父节点的值比子节点小，交换父子节点位置</span></span><br><span class="line"><span class="comment"> * 5. 重复3、4，直到最大堆的特性被满足</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@SuppressWarnings</span>(<span class="string">"unchecked"</span>)</span><br><span class="line"><span class="function"><span class="keyword">public</span> T <span class="title">poll</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (size == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> NoSuchElementException();</span><br><span class="line">    &#125;</span><br><span class="line">    T oldRoot = (T) array[<span class="number">0</span>];</span><br><span class="line">    array[<span class="number">0</span>] = array[size - <span class="number">1</span>];</span><br><span class="line">    size--;</span><br><span class="line">    <span class="comment">// 调整堆结构</span></span><br><span class="line">    heapifyDown(<span class="keyword">this</span>.array, <span class="number">0</span>, size);</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> oldRoot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 以index为根，向下调整最大堆结构</span></span><br><span class="line"><span class="comment"> * </span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> array</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> index</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> len</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@SuppressWarnings</span>(<span class="string">"unchecked"</span>)</span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">heapifyDown</span><span class="params">(Object[] array, <span class="keyword">int</span> index, <span class="keyword">int</span> len)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> largeIndex = index;</span><br><span class="line">    <span class="keyword">int</span> nonLeafIndex = len / <span class="number">2</span> - <span class="number">1</span>;</span><br><span class="line">    <span class="comment">// 此处可直接以最后一个非叶节点的索引为边界，如JDK PriorityQueue中代码</span></span><br><span class="line">    <span class="keyword">if</span> (largeIndex &lt;= nonLeafIndex) &#123;</span><br><span class="line">        largeIndex = leftChild(index);</span><br><span class="line">        <span class="comment">// 判断左右孩子中较大者</span></span><br><span class="line">        <span class="keyword">int</span> rightIndex = rightChild(index);</span><br><span class="line">        <span class="keyword">if</span> (rightIndex &lt; len) &#123;</span><br><span class="line">            <span class="comment">// 如果右孩子更大，重新赋值largeIndex</span></span><br><span class="line">            <span class="keyword">if</span> (((T) array[largeIndex]).compareTo((T) array[rightIndex]) &lt; <span class="number">0</span>) &#123;</span><br><span class="line">                largeIndex = rightIndex;</span><br><span class="line">            &#125;                </span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">if</span> (((T) array[index]).compareTo((T) array[largeIndex]) &lt; <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="comment">// 将当前节点与子节点中较大者进行交换</span></span><br><span class="line">            swap(array, index, largeIndex);                </span><br><span class="line">            <span class="comment">// 递归</span></span><br><span class="line">            heapifyDown(array, largeIndex, len);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="了解堆之后，重新思考Top-K问题"><a href="#了解堆之后，重新思考Top-K问题" class="headerlink" title="了解堆之后，重新思考Top K问题"></a>了解堆之后，重新思考Top K问题</h2><p><strong>来看看用堆我们能不能得到一个更好的方案？</strong></p>
+<p>我们不再使用数组保存前K大元素，而是使用一个最小堆，堆顶是前K个元素中最小的元素。我们遍历整份数据，一旦我们遇到一个比堆中最小元素大的元素，我们要做两件事：</p>
+<ol>
+<li>从堆中移除最小的那个元素</li>
+<li>把这个更大的元素插入到堆中</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">输入: [3, 1, 5, 12, 2, 11], K &#x3D; 3</span><br><span class="line">输出: [5, 12, 11]</span><br></pre></td></tr></table></figure>
+
+<p>以上面的数据为例，总结一下我们的解法分为哪几步：</p>
+<ol>
+<li>向最小堆中插入K个元素</li>
+<li>插入后，堆有三个元素<code>[3, 1, 5]</code>，1因为是最小元素所以在根部</li>
+<li>遍历数组中剩下的元素，一旦发现比根部更大的元素，我们就移除堆的根，并插入这个新元素</li>
+<li>第四个数是12，比1大，因此它取代了1，现在堆中的元素是<code>[3, 5, 12]</code>，3成为了新的根部</li>
+<li>第5个数是2，没3大，pass</li>
+<li>最后一个数是11，比3大，所以取代3</li>
+</ol>
+<p>之前讨论过的，从最小堆里面删除一个元素要<code>O(logK)</code>，我们首先往堆里面插入了<code>K</code>个元素，然后迭代剩余的元素，然后每一步在最坏的情况下，我们都需要进行删除插入操作，我们算法需要的复杂度为<code>O(K∗logK+(N−K)∗logK)</code>。K一般是远远小于N的，很明显，这比<code>O(N∗logN)</code>好多了。</p>
+<p>我们只需要记住一个原则：<strong>在一堆数据中追踪前几个符合条件的数据用堆是最高效的</strong>。</p>
+<h2 id="堆排序"><a href="#堆排序" class="headerlink" title="堆排序"></a>堆排序</h2><p>讲完了堆，最后再死磕一下常见到却不常用的<strong>堆排序</strong>。</p>
+<p>堆排序算是诸多排序算法中比较难掌握的一个，该算法巧妙利用了堆的性质，如果不了解堆的话，会看得一头雾水。前面已经分析了堆的各种特性与操作，建议你先敲一遍堆代码后再看堆排序，这将容易理解得多。</p>
+<h3 id="算法流程"><a href="#算法流程" class="headerlink" title="算法流程"></a>算法流程</h3><p>堆排序的过程是：</p>
+<ol>
+<li>创建一个堆</li>
+<li>把堆首（最大值）和堆尾互换</li>
+<li>把堆的尺寸缩小1，并调用<code>heapifyDown()</code>,目的是把新的数组顶端数据调整到相应位置</li>
+<li>重复步骤2，直到堆的尺寸为1</li>
+</ol>
+<p>堆排序的平均<a href="https://zh.wikipedia.org/wiki/时间复杂度" target="_blank" rel="noopener">时间复杂度</a>为<code>O(N*logN)</code>，<a href="https://zh.wikipedia.org/wiki/空间复杂度" target="_blank" rel="noopener">空间复杂度</a>为<code>O(1)</code>。</p>
+<p><img src="/2020/07/29/%E4%BB%8ETop-K%E7%AE%97%E6%B3%95%E9%97%AE%E9%A2%98%E5%85%A5%E6%89%8B%EF%BC%8C%E5%BD%BB%E5%BA%95%E6%8E%8C%E6%8F%A1%E5%A0%86-Heap-%E7%BB%93%E6%9E%84/Sorting_heapsort_anim.gif" alt="Sorting heapsort anim.gif"></p>
+<h4 id="建堆过程"><a href="#建堆过程" class="headerlink" title="建堆过程"></a>建堆过程</h4><h5 id="两种建堆方案"><a href="#两种建堆方案" class="headerlink" title="两种建堆方案"></a>两种建堆方案</h5><p>有两种情况，第一种情况是待排序元素个数已知；第二种情况是待排元素个数不确定，元素可能是动态增加的。</p>
+<p>先讨论比较简单的第二种情况：</p>
+<ul>
+<li>最容易想到的方案就是利用堆的插入方法，将数组中的元素一个一个的插入堆中。这种情况需要额外建立一个长度为N的堆，空间复杂度为<code>O(N</code>)。每个元素插入的时间复杂度为<code>O(logN)</code>，N个元素的时间复杂度为<code>O(N*logN)</code>。</li>
+</ul>
+<p>第一种情况更复杂：</p>
+<ul>
+<li>元素个数已知，也就意味着数组个数是确定的，这时可以进行就地的堆创建，而不需要额外的空间开销。具体做法如下：<ul>
+<li>从最后一个非叶子节点一直到根结点进行堆化的调整。如果当前节点小于某个自己的孩子节点（大根堆中），那么当前节点和这个孩子交换。即不断进行heapifyDown操作，这是一种类似下沉的操作。</li>
+<li>这种方案的时间复杂度是<code>O(N)</code>。乍一看感觉这和插入方案的调整过程差不多，应该也是<code>O(N*logN)</code>才对。但这种方案在性能上的确要优于插入方案。具体的数学证明过程比较复杂，可以自己去查一下，这里就不写了。</li>
+</ul>
+</li>
+</ul>
+<h4 id="排序过程"><a href="#排序过程" class="headerlink" title="排序过程"></a>排序过程</h4><p>假设我们已经读入一系列数据并创建了一个堆，一个最直观的算法就是反复的调用<code>poll()</code>函数，因为该函数总是能够返回堆中最大的值，然后把它从堆中删除，从而对这一系列返回值的输出就得到了该序列的降序排列，但在输出时会用到额外的存储空间。</p>
+<p>真正的就地堆排序要更巧妙，过程已经在上面列出来了。就是通过不断交换堆首和堆尾元素，每次交换都能确定一个元素位置，并在每次交换后利用heapifyDown调整堆结构，从而完成排序。</p>
+<p>代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 堆排序</span></span><br><span class="line"><span class="comment"> * </span></span><br><span class="line"><span class="comment"> * 升序，不稳定排序</span></span><br><span class="line"><span class="comment"> * </span></span><br><span class="line"><span class="comment"> * 时间复杂度O(nlogn)</span></span><br><span class="line"><span class="comment"> * 空间复杂度O(1)</span></span><br><span class="line"><span class="comment"> * </span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> array</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> T[] heapSort(T[] array) &#123;</span><br><span class="line">    <span class="comment">// 构建最大堆</span></span><br><span class="line">    buildMaxHeap(array);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 排序，循环n-1次</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = array.length - <span class="number">1</span>; i &gt; <span class="number">0</span>; i--) &#123;</span><br><span class="line">        swap(array, <span class="number">0</span>, i);</span><br><span class="line">        <span class="comment">// 每次交换后都调整一遍堆结构。heapifyDown方法见上面的堆代码实现</span></span><br><span class="line">        heapifyDown(array, <span class="number">0</span>, i);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> array;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 构建最大堆</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> array</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">buildMaxHeap</span><span class="params">(T[] array)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 将传入数组视为完全二叉树，从最后一个非叶子节点开始向前遍历，建立最大堆</span></span><br><span class="line">    <span class="keyword">int</span> index = array.length / <span class="number">2</span> - <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = index; i &gt;=<span class="number">0</span> ; i--) &#123;</span><br><span class="line">        heapifyDown(array, i, array.length);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="堆排序与快速排序比较"><a href="#堆排序与快速排序比较" class="headerlink" title="堆排序与快速排序比较"></a>堆排序与快速排序比较</h2><p>为什么实际选择排序算法时很少会选择排序呢？就像Java提供的Arrays.sort方法，其中用的是快速排序。平均时间上，堆排序的时间常数比快排要大一些，因此通常会慢一些，但是堆排序最差时间也是O(nlogn)的，这点比快排好。</p>
+<p>那为什么还是选择了快速排序呢？</p>
+<h4 id="局部性原理（Locality-of-reference）"><a href="#局部性原理（Locality-of-reference）" class="headerlink" title="局部性原理（Locality of reference）"></a>局部性原理（Locality of reference）</h4><blockquote>
+<p><strong>访问局部性</strong>（英语：Locality of reference）指的是在<a href="https://zh.wikipedia.org/wiki/计算机科学" target="_blank" rel="noopener">计算机科学</a>领域中应用程序在访问内存的时候，倾向于访问内存中较为靠近的值。</p>
+<p>访问局部性分为两种基本形式，一种是时间局部性，另一种是空间局部性。</p>
+<p>时间局部性指的是，程序在运行时，最近刚刚被引用过的一个内存位置容易再次被引用，比如在调取一个<a href="https://zh.wikipedia.org/wiki/函数" target="_blank" rel="noopener">函数</a>的时候，前不久才调取过的<a href="https://zh.wikipedia.org/wiki/本地参数" target="_blank" rel="noopener">本地参数</a>容易再度被调取使用。</p>
+<p>空间局部性指的是，最近引用过的内存位置以及其周边的内存位置容易再次被使用。空间局部性比较常见于<a href="https://zh.wikipedia.org/wiki/程式迴圈" target="_blank" rel="noopener">循环</a>中，比如在一个数列中，如果第3个元素在上一个循环中使用，则本次循环中极有可能会使用第4个元素。</p>
+<p>局部性是出现在计算机系统中的一种可预测行为。系统的这种强访问局部性，可以被用来在处理器内核的指令流水线中进行性能优化，如缓存，内存预读取以及分支预测。</p>
+</blockquote>
+<h5 id="分级存储器体系（Hierrachial-memory）"><a href="#分级存储器体系（Hierrachial-memory）" class="headerlink" title="分级存储器体系（Hierrachial memory）"></a>分级存储器体系（Hierrachial memory）</h5><p>更快的存取速度意味着更昂贵的成本，这使设计者在设计时必须作出取舍，一方面要存储足够多的数据，一方面不能拖累CPU的处理速度，还要考虑到成本的限制。因此在计算机体系结构中，为了最大限度的优化系统速度，存储器按照存取速度与存储容量分成了不同的层次。各级存储的速度与容量如下（来自维基百科）：</p>
+<ul>
+<li><a href="https://en.wikipedia.org/wiki/CPU_register" target="_blank" rel="noopener">CPU registers</a> (8-256 registers) – immediate access, with the speed of the innermost core of the processor</li>
+<li>L1 <a href="https://en.wikipedia.org/wiki/CPU_cache" target="_blank" rel="noopener">CPU caches</a> (32 KiB to 512 <a href="https://en.wikipedia.org/wiki/KiB" target="_blank" rel="noopener">KiB</a>) – fast access, with the speed of the innermost memory bus owned exclusively by each core</li>
+<li>L2 CPU caches (128 KiB to 24 <a href="https://en.wikipedia.org/wiki/MiB" target="_blank" rel="noopener">MiB</a>) – slightly slower access, with the speed of the <a href="https://en.wikipedia.org/wiki/Memory_bus" target="_blank" rel="noopener">memory bus</a> shared between twins of cores</li>
+<li>L3 CPU caches (2 MiB to 32 <a href="https://en.wikipedia.org/wiki/MiB" target="_blank" rel="noopener">MiB</a>) – even slower access, with the speed of the memory bus shared between even more cores of the same processor</li>
+<li>Main <a href="https://en.wikipedia.org/wiki/Physical_memory" target="_blank" rel="noopener">physical memory</a> (<a href="https://en.wikipedia.org/wiki/RAM" target="_blank" rel="noopener">RAM</a>) (256 MiB to 64 <a href="https://en.wikipedia.org/wiki/GiB" target="_blank" rel="noopener">GiB</a>) – slow access, the speed of which is limited by the spatial distances and general hardware interfaces between the processor and the memory modules on the <a href="https://en.wikipedia.org/wiki/Motherboard" target="_blank" rel="noopener">motherboard</a></li>
+<li>Disk (<a href="https://en.wikipedia.org/wiki/Virtual_memory" target="_blank" rel="noopener">virtual memory</a>, <a href="https://en.wikipedia.org/wiki/File_system" target="_blank" rel="noopener">file system</a>) (1 GiB to 256 <a href="https://en.wikipedia.org/wiki/TiB" target="_blank" rel="noopener">TiB</a>) – very slow, due to the narrower (in bit width), physically much longer data channel between the main board of the computer and the disk devices, and due to the extraneous software protocol needed on the top of the slow hardware interface</li>
+<li>Remote memory (other computers or the cloud) (practically unlimited) – speed varies from very slow to extremely slow</li>
+</ul>
+<p>现代机器倾向于将较低内存块读入内存层次结构的下一级。如果这替换了已使用的内存，操作系统将尝试预测访问最少（或最新）的数据，并将其向下移动到内存层次结构中。预测算法应该尽量简单，以降低硬件复杂度，虽然它们正变得越来越复杂。</p>
+<p>热点数据将被存入CPU中的三级高速缓存(Cache)中，优化程序速度的关键之一就是利用局部性原理，保证数据总是可以在高速缓存中被CPU命中。那么现在我们来分析一下快速排序与堆排序对Cache的友好性是否有差距。</p>
+<p>快速排序利用分治法的思想，通过不断产生新的基准值，将原数组不断地划分成两部分，然后进行大小调整。你会发现这里元素在互相比较、交换时，是被限定了范围的，不会出现数组头部与尾部数据进行比较的情况。快排在递归进行部分的排序的时候，一段时间内只会访问局部的数据，因此缓存能够更大概率的命中。</p>
+<p>而堆排序不一样，堆排序的比较过程是非常跳跃的，两个交换元素之间的跨度经常很大，很难被集中在一个范围中。堆排序的建堆过程是整个数组各个位置都访问到的，后面则是所有未排序数据各个位置都可能访问到的，所以不利于缓存发挥作用。简单的说就是快排的存取模型的<strong>局部性（locality）</strong>更强，堆排序差一些。</p>
+<h4 id="另一种思考"><a href="#另一种思考" class="headerlink" title="另一种思考"></a>另一种思考</h4><p>此部分来自知乎<a href="https://www.zhihu.com/question/23873747/answer/327427621" target="_blank" rel="noopener">为什么在平均情况下快速排序比堆排序要优秀?</a></p>
+<ol>
+<li>如果我们已知a&lt;b 那么毫无疑问a和b是无需再次做比较的，如果发生的话，我把他称为重复的比较。毫无疑问，对快速排序，重复的比较从来都不会发生，因为a和b第一次比较的时候至少有一个是中柱，而中柱和区间内所有元素比较完毕后是不需要再参加任何比较的，所以a和b不会发生重复比较。</li>
+<li>如果我们已知a&lt;b , b&lt;c 那么毫无疑问a和c是无需做比较的，如果发生的话，我把他称为病态的比较。毫无疑问，对快速排序，病态的比较从来都不会发生，因为b就是递归中的那个中柱pivot，b的位置确定之后，a和c所在的区间各自去排序，所以a和c再也不会做比较了。</li>
+</ol>
+<p>上述观点通过比较操作的次数最小化来进行评估，没有考虑内存&amp;缓存写速率，数据读取缓存有效性等问题。而且同理也可知，归并排序也其实相当高效（然而它内存写操作会多出不少）。</p>
+<p>不过<strong>一个值得注意的事实是，快排几十年前就被发现多数情况比堆排快了，而那时候的cpu 除了寄存器基本没cache, 内存读写速率差异不大</strong>，内存读写和cpu的寄存器的差异也不大（所以才不需要什么cache）。所以那时候得出的结论 平均下来快排比堆排快意味着：</p>
+<p><strong>平均而言，快排产生的指令数量开销比堆排产生的指令数量开销，是要小的。</strong> </p>
+<p>学习算法初步时，考虑性能优劣的话，一般就只考虑指令数量多少吧，别想多了。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+      <div>
+        <ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者：</strong>
+    KunPeng
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://makunpeng.github.io/2020/07/29/%E4%BB%8ETop-K%E7%AE%97%E6%B3%95%E9%97%AE%E9%A2%98%E5%85%A5%E6%89%8B%EF%BC%8C%E5%BD%BB%E5%BA%95%E6%8E%8C%E6%8F%A1%E5%A0%86-Heap-%E7%BB%93%E6%9E%84/" title="从Top K算法问题入手，彻底掌握堆(Heap)结构">http://makunpeng.github.io/2020/07/29/%E4%BB%8ETop-K%E7%AE%97%E6%B3%95%E9%97%AE%E9%A2%98%E5%85%A5%E6%89%8B%EF%BC%8C%E5%BD%BB%E5%BA%95%E6%8E%8C%E6%8F%A1%E5%A0%86-Heap-%E7%BB%93%E6%9E%84/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>
+    本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/" rel="external nofollow" target="_blank">CC BY-NC-SA 3.0</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Top-K/" rel="tag"># Top K</a>
+          
+            <a href="/tags/%E5%A0%86%E6%8E%92%E5%BA%8F/" rel="tag"># 堆排序</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/12/01/%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E9%94%81/" rel="next" title="数据库 - 事务隔离与数据库锁">
+                <i class="fa fa-chevron-left"></i> 数据库 - 事务隔离与数据库锁
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+    </div>
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            作者
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="/images/touxiang.jpeg"
+                alt="KunPeng" />
+            
+              <p class="site-author-name" itemprop="name">KunPeng</p>
+              <p class="site-description motion-element" itemprop="description">每个人心中都有一团火，路过的人只看到烟。<br><br><br></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/%7C%7Carchive">
+              
+                  <span class="site-state-item-count">9</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">15</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/MaKunPeng" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-globe"></i>GitHub</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#什么是Top-K问题？"><span class="nav-number">1.</span> <span class="nav-text">什么是Top K问题？</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#如何解决？"><span class="nav-number">1.1.</span> <span class="nav-text">如何解决？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#是否可以做得更好？"><span class="nav-number">1.2.</span> <span class="nav-text">是否可以做得更好？</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#堆（Heap）"><span class="nav-number">2.</span> <span class="nav-text">堆（Heap）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#定义"><span class="nav-number">2.1.</span> <span class="nav-text">定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#节点关系"><span class="nav-number">2.2.</span> <span class="nav-text">节点关系</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#数学证明"><span class="nav-number">2.2.1.</span> <span class="nav-text">数学证明</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#代码实现（Java）-以最大堆为例"><span class="nav-number">2.3.</span> <span class="nav-text">代码实现（Java）- 以最大堆为例</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#插入方法（Insert）"><span class="nav-number">2.3.1.</span> <span class="nav-text">插入方法（Insert）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#取根元素（Poll）"><span class="nav-number">2.3.2.</span> <span class="nav-text">取根元素（Poll）</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#了解堆之后，重新思考Top-K问题"><span class="nav-number">3.</span> <span class="nav-text">了解堆之后，重新思考Top K问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#堆排序"><span class="nav-number">4.</span> <span class="nav-text">堆排序</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#算法流程"><span class="nav-number">4.1.</span> <span class="nav-text">算法流程</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#建堆过程"><span class="nav-number">4.1.1.</span> <span class="nav-text">建堆过程</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#两种建堆方案"><span class="nav-number">4.1.1.1.</span> <span class="nav-text">两种建堆方案</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#排序过程"><span class="nav-number">4.1.2.</span> <span class="nav-text">排序过程</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#堆排序与快速排序比较"><span class="nav-number">5.</span> <span class="nav-text">堆排序与快速排序比较</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#局部性原理（Locality-of-reference）"><span class="nav-number">5.0.1.</span> <span class="nav-text">局部性原理（Locality of reference）</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#分级存储器体系（Hierrachial-memory）"><span class="nav-number">5.0.1.1.</span> <span class="nav-text">分级存储器体系（Hierrachial memory）</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#另一种思考"><span class="nav-number">5.0.2.</span> <span class="nav-text">另一种思考</span></a></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2017 &mdash; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">KunPeng</span>
+
+  
+</div>
+
+
+  <div class="powered-by">Stay young</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Created by kunpeng</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//unpkg.com/valine/dist/Valine.min.js"></script>
+  
+  <script type="text/javascript">
+    var GUEST = ['nick','mail','link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item=>{
+      return GUEST.indexOf(item)>-1;
+    });
+    new Valine({
+        el: '#comments' ,
+        verify: false,
+        notify: false,
+        appId: 'B22p3lwtX5GXkGN7EdnVyMFn-gzGzoHsz',
+        appKey: 'XIbxklUKIUvIjHexKbVlJPiq',
+        placeholder: 'Just go go',
+        avatar:'mm',
+        guest_info:guest,
+        pageSize:'10' || 10,
+    });
+  </script>
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+  <script src="https://cdn1.lncld.net/static/js/av-core-mini-0.6.4.js"></script>
+  <script>AV.initialize("B22p3lwtX5GXkGN7EdnVyMFn-gzGzoHsz", "XIbxklUKIUvIjHexKbVlJPiq");</script>
+  <script>
+    function showTime(Counter) {
+      var query = new AV.Query(Counter);
+      var entries = [];
+      var $visitors = $(".leancloud_visitors");
+
+      $visitors.each(function () {
+        entries.push( $(this).attr("id").trim() );
+      });
+
+      query.containedIn('url', entries);
+      query.find()
+        .done(function (results) {
+          var COUNT_CONTAINER_REF = '.leancloud-visitors-count';
+
+          if (results.length === 0) {
+            $visitors.find(COUNT_CONTAINER_REF).text(0);
+            return;
+          }
+
+          for (var i = 0; i < results.length; i++) {
+            var item = results[i];
+            var url = item.get('url');
+            var time = item.get('time');
+            var element = document.getElementById(url);
+
+            $(element).find(COUNT_CONTAINER_REF).text(time);
+          }
+          for(var i = 0; i < entries.length; i++) {
+            var url = entries[i];
+            var element = document.getElementById(url);
+            var countSpan = $(element).find(COUNT_CONTAINER_REF);
+            if( countSpan.text() == '') {
+              countSpan.text(0);
+            }
+          }
+        })
+        .fail(function (object, error) {
+          console.log("Error: " + error.code + " " + error.message);
+        });
+    }
+
+    function addCount(Counter) {
+      var $visitors = $(".leancloud_visitors");
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+      var query = new AV.Query(Counter);
+
+      query.equalTo("url", url);
+      query.find({
+        success: function(results) {
+          if (results.length > 0) {
+            var counter = results[0];
+            counter.fetchWhenSave(true);
+            counter.increment("time");
+            counter.save(null, {
+              success: function(counter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.get('time'));
+              },
+              error: function(counter, error) {
+                console.log('Failed to save Visitor num, with error message: ' + error.message);
+              }
+            });
+          } else {
+            var newcounter = new Counter();
+            /* Set ACL */
+            var acl = new AV.ACL();
+            acl.setPublicReadAccess(true);
+            acl.setPublicWriteAccess(true);
+            newcounter.setACL(acl);
+            /* End Set ACL */
+            newcounter.set("title", title);
+            newcounter.set("url", url);
+            newcounter.set("time", 1);
+            newcounter.save(null, {
+              success: function(newcounter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(newcounter.get('time'));
+              },
+              error: function(newcounter, error) {
+                console.log('Failed to create');
+              }
+            });
+          }
+        },
+        error: function(error) {
+          console.log('Error:' + error.code + " " + error.message);
+        }
+      });
+    }
+
+    $(function() {
+      var Counter = AV.Object.extend("Counter");
+      if ($('.leancloud_visitors').length == 1) {
+        addCount(Counter);
+      } else if ($('.post-title-link').length > 1) {
+        showTime(Counter);
+      }
+    });
+  </script>
+
+
+
+  
+
+  
+
+  
+  
+
+  
+  
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+          processEscapes: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+        }
+      });
+    </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for (i=0; i < all.length; i += 1) {
+          all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+      });
+    </script>
+    <script type="text/javascript" src="//cdn.bootcss.com/mathjax/2.7.1/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+  
+
+
+  
+
+  
+
+</body>
+</html>
