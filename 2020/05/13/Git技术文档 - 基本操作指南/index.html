@@ -75,7 +75,7 @@
 
 
 
-  <meta name="keywords" content="数据库," />
+  <meta name="keywords" content="Git,版本控制," />
 
 
 
@@ -86,23 +86,23 @@
 
 
 
-<meta name="description" content="一、什么是事务？ 数据库事务（Transaction）是数据库管理系统执行过程中的一个逻辑单位，由一个有限的数据库操作序列构成。这些操作要么全部执行,要么全部不执行，是一个不可分割的工作单位。事务由事务开始与事务结束之间执行的全部数据库操作组成。 —- 来自wikipedia  例子：某人要在商店使用电子货币购买100元的东西，当中至少包括两个操作：  该人账户减少100元 商店账户增加100元">
+<meta name="description" content="一、架构 工作区 暂存区 本地库（版本库）  git add：工作区→暂存区 git commit：暂存区→本地库 二、本地库和远程库本团队协作 跨团队协作 三、操作本地库初始化 git init  会自动生成.git隐藏目录，不要修改。 设置签名设置用户名与邮箱，此处和登陆GitHub的用户没有任何关系。  git config –global user.name xxx  git config">
 <meta property="og:type" content="article">
-<meta property="og:title" content="数据库 - 事务隔离与数据库锁">
-<meta property="og:url" content="http://makunpeng.github.io/2019/12/01/%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E9%94%81/index.html">
+<meta property="og:title" content="Git技术文档 - 基本操作指南">
+<meta property="og:url" content="http://makunpeng.github.io/2020/05/13/Git%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3%20-%20%E5%9F%BA%E6%9C%AC%E6%93%8D%E4%BD%9C%E6%8C%87%E5%8D%97/index.html">
 <meta property="og:site_name" content="KunPeng&#39;s Notes">
-<meta property="og:description" content="一、什么是事务？ 数据库事务（Transaction）是数据库管理系统执行过程中的一个逻辑单位，由一个有限的数据库操作序列构成。这些操作要么全部执行,要么全部不执行，是一个不可分割的工作单位。事务由事务开始与事务结束之间执行的全部数据库操作组成。 —- 来自wikipedia  例子：某人要在商店使用电子货币购买100元的东西，当中至少包括两个操作：  该人账户减少100元 商店账户增加100元">
-<meta property="og:image" content="http://dl.iteye.com/upload/picture/pic/72610/af5b9c1e-4517-3df2-ad62-af25d1672d12.jpg">
-<meta property="og:image" content="https://static001.geekbang.org/resource/image/d9/ee/d9c313809e5ac148fc39feff532f0fee.png">
-<meta property="og:image" content="http://raw.githubusercontent.com/IMWYY/AboutMyself/master/picBed/Screenshot1520500121.png">
-<meta property="og:image" content="https://static001.geekbang.org/resource/image/51/10/51f501f718e420244b0a2ec2ce858710.jpg">
-<meta property="og:image" content="https://static001.geekbang.org/resource/image/4d/52/4d0eeec7b136371b79248a0aed005a52.jpg">
-<meta property="article:published_time" content="2019-12-01T04:30:00.000Z">
-<meta property="article:modified_time" content="2020-06-18T09:10:50.138Z">
+<meta property="og:description" content="一、架构 工作区 暂存区 本地库（版本库）  git add：工作区→暂存区 git commit：暂存区→本地库 二、本地库和远程库本团队协作 跨团队协作 三、操作本地库初始化 git init  会自动生成.git隐藏目录，不要修改。 设置签名设置用户名与邮箱，此处和登陆GitHub的用户没有任何关系。  git config –global user.name xxx  git config">
+<meta property="og:image" content="http://makunpeng.github.io/2020/05/13/Git%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3%20-%20%E5%9F%BA%E6%9C%AC%E6%93%8D%E4%BD%9C%E6%8C%87%E5%8D%97/%E6%9C%AC%E5%9B%A2%E9%98%9F%E5%8D%8F%E4%BD%9C.png">
+<meta property="og:image" content="http://makunpeng.github.io/2020/05/13/Git%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3%20-%20%E5%9F%BA%E6%9C%AC%E6%93%8D%E4%BD%9C%E6%8C%87%E5%8D%97/%E8%B7%A8%E5%9B%A2%E9%98%9F%E5%8D%8F%E4%BD%9C.png">
+<meta property="og:image" content="http://makunpeng.github.io/2020/05/13/Git%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3%20-%20%E5%9F%BA%E6%9C%AC%E6%93%8D%E4%BD%9C%E6%8C%87%E5%8D%97/%E9%82%80%E8%AF%B7%E6%88%90%E5%91%98%E5%8A%A0%E5%85%A5%E5%9B%A2%E9%98%9F.png">
+<meta property="og:image" content="http://makunpeng.github.io/2020/05/13/Git%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3%20-%20%E5%9F%BA%E6%9C%AC%E6%93%8D%E4%BD%9C%E6%8C%87%E5%8D%97/%E5%8F%91%E8%B5%B7pullrequest.png">
+<meta property="article:published_time" content="2020-05-13T03:31:34.000Z">
+<meta property="article:modified_time" content="2020-07-29T10:56:29.737Z">
 <meta property="article:author" content="KunPeng">
-<meta property="article:tag" content="数据库">
+<meta property="article:tag" content="Git">
+<meta property="article:tag" content="版本控制">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://dl.iteye.com/upload/picture/pic/72610/af5b9c1e-4517-3df2-ad62-af25d1672d12.jpg">
+<meta name="twitter:image" content="http://makunpeng.github.io/2020/05/13/Git%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3%20-%20%E5%9F%BA%E6%9C%AC%E6%93%8D%E4%BD%9C%E6%8C%87%E5%8D%97/%E6%9C%AC%E5%9B%A2%E9%98%9F%E5%8D%8F%E4%BD%9C.png">
 
 
 
@@ -132,13 +132,13 @@
 
 
 
-  <link rel="canonical" href="http://makunpeng.github.io/2019/12/01/事务隔离级别与数据库锁/"/>
+  <link rel="canonical" href="http://makunpeng.github.io/2020/05/13/Git技术文档 - 基本操作指南/"/>
 
 
 
 
 
-  <title>数据库 - 事务隔离与数据库锁 | KunPeng's Notes</title>
+  <title>Git技术文档 - 基本操作指南 | KunPeng's Notes</title>
   
 
 
@@ -299,7 +299,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://makunpeng.github.io/2019/12/01/%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E9%94%81/">
+    <link itemprop="mainEntityOfPage" href="http://makunpeng.github.io/2020/05/13/Git%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3%20-%20%E5%9F%BA%E6%9C%AC%E6%93%8D%E4%BD%9C%E6%8C%87%E5%8D%97/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="KunPeng">
@@ -316,7 +316,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">数据库 - 事务隔离与数据库锁</h1>
+          <h1 class="post-title" itemprop="name headline">Git技术文档 - 基本操作指南</h1>
         
 
         <div class="post-meta">
@@ -328,8 +328,8 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-12-01T12:30:00+08:00">
-                2019-12-01
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-05-13T11:31:34+08:00">
+                2020-05-13
               </time>
             
 
@@ -351,8 +351,8 @@
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index">
-                    <span itemprop="name">数据库</span>
+                  <a href="/categories/Git/" itemprop="url" rel="index">
+                    <span itemprop="name">Git</span>
                   </a>
                 </span>
 
@@ -369,8 +369,8 @@
                 <span class="post-meta-item-icon">
                   <i class="fa fa-comment-o"></i>
                 </span>
-                <a href="/2019/12/01/%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E9%94%81/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count valine-comment-count" data-xid="/2019/12/01/%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E9%94%81/" itemprop="commentCount"></span>
+                <a href="/2020/05/13/Git%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3%20-%20%E5%9F%BA%E6%9C%AC%E6%93%8D%E4%BD%9C%E6%8C%87%E5%8D%97/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count valine-comment-count" data-xid="/2020/05/13/Git%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3%20-%20%E5%9F%BA%E6%9C%AC%E6%93%8D%E4%BD%9C%E6%8C%87%E5%8D%97/" itemprop="commentCount"></span>
                 </a>
               </span>
             
@@ -378,7 +378,7 @@
 
           
           
-             <span id="/2019/12/01/%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E9%94%81/" class="leancloud_visitors" data-flag-title="数据库 - 事务隔离与数据库锁">
+             <span id="/2020/05/13/Git%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3%20-%20%E5%9F%BA%E6%9C%AC%E6%93%8D%E4%BD%9C%E6%8C%87%E5%8D%97/" class="leancloud_visitors" data-flag-title="Git技术文档 - 基本操作指南">
                <span class="post-meta-divider">|</span>
                <span class="post-meta-item-icon">
                  <i class="fa fa-eye"></i>
@@ -409,153 +409,198 @@
       
 
       
-        <h2 id="一、什么是事务？"><a href="#一、什么是事务？" class="headerlink" title="一、什么是事务？"></a>一、什么是事务？</h2><blockquote>
-<p><strong>数据库事务</strong>（<strong>Transaction</strong>）是<a href="https://zh.wikipedia.org/wiki/数据库管理系统" target="_blank" rel="noopener">数据库管理系统</a>执行过程中的一个逻辑单位，由一个有限的<a href="https://zh.wikipedia.org/wiki/数据库" target="_blank" rel="noopener">数据库</a>操作序列构成。这些操作要么全部执行,要么全部不执行，是一个不可分割的工作单位。事务由事务开始与事务结束之间执行的全部数据库操作组成。</p>
-<p>—- <em>来自wikipedia</em></p>
+        <h2 id="一、架构"><a href="#一、架构" class="headerlink" title="一、架构"></a>一、架构</h2><ul>
+<li>工作区</li>
+<li>暂存区</li>
+<li>本地库（版本库）</li>
+</ul>
+<p>git add：工作区→暂存区</p>
+<p>git commit：暂存区→本地库</p>
+<h2 id="二、本地库和远程库"><a href="#二、本地库和远程库" class="headerlink" title="二、本地库和远程库"></a>二、本地库和远程库</h2><h3 id="本团队协作"><a href="#本团队协作" class="headerlink" title="本团队协作"></a>本团队协作</h3><p><img src="/2020/05/13/Git%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3%20-%20%E5%9F%BA%E6%9C%AC%E6%93%8D%E4%BD%9C%E6%8C%87%E5%8D%97/%E6%9C%AC%E5%9B%A2%E9%98%9F%E5%8D%8F%E4%BD%9C.png" alt="image-20200412221514694"></p>
+<h3 id="跨团队协作"><a href="#跨团队协作" class="headerlink" title="跨团队协作"></a>跨团队协作</h3><p><img src="/2020/05/13/Git%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3%20-%20%E5%9F%BA%E6%9C%AC%E6%93%8D%E4%BD%9C%E6%8C%87%E5%8D%97/%E8%B7%A8%E5%9B%A2%E9%98%9F%E5%8D%8F%E4%BD%9C.png" alt="image-20200412222450940"></p>
+<h2 id="三、操作"><a href="#三、操作" class="headerlink" title="三、操作"></a>三、操作</h2><h3 id="本地库初始化"><a href="#本地库初始化" class="headerlink" title="本地库初始化"></a>本地库初始化</h3><ul>
+<li>git init</li>
+</ul>
+<p>会自动生成.git隐藏目录，不要修改。</p>
+<h3 id="设置签名"><a href="#设置签名" class="headerlink" title="设置签名"></a>设置签名</h3><p>设置用户名与邮箱，此处和登陆GitHub的用户没有任何关系。</p>
+<ul>
+<li>git config –global user.name xxx </li>
+<li>git config –global user.name <a href="mailto:xxxxxx@xx.com">xxxxxx@xx.com</a></li>
+</ul>
+<p>若不加global，则设置的参数只针对当前仓库。</p>
+<h4 id="查看设置"><a href="#查看设置" class="headerlink" title="查看设置"></a>查看设置</h4><p>git config user.name/user.email</p>
+<p>cat .git/config</p>
+<h3 id="暂存、提交、删除"><a href="#暂存、提交、删除" class="headerlink" title="暂存、提交、删除"></a>暂存、提交、删除</h3><ul>
+<li>git status 查看目前git仓库的状态</li>
+<li>git add filename 将文件加入暂存区<ul>
+<li>git add . 暂存所有修改</li>
+<li>git add –all 同上</li>
+</ul>
+</li>
+<li>git checkout – filename 用于未使用git add时，放弃对单个文件的修改<ul>
+<li>git reset HEAD filename 也是相当于从暂存区清除文件</li>
+</ul>
+</li>
+<li>git commit -m ‘xxxxxxx’ filename 提交文件<ul>
+<li>git commit -a -m ‘xxxxxx’：执行此命令的话不用add，直接提交所有改动</li>
+</ul>
+</li>
+</ul>
+<h4 id="取消暂存文件"><a href="#取消暂存文件" class="headerlink" title="取消暂存文件"></a>取消暂存文件</h4><ul>
+<li>git rm –cached filename 从暂存区移除文件/文件夹</li>
+<li>git reset HEAD . 清空暂存区所有文件</li>
+</ul>
+<h4 id="取消对文件的版本追踪"><a href="#取消对文件的版本追踪" class="headerlink" title="取消对文件的版本追踪"></a>取消对文件的版本追踪</h4><p>每次用git status查看状态时总是列出未被跟踪的文件</p>
+<p>解决方法：</p>
+<ol>
+<li><p>当被跟踪的文件里面有不想跟踪的文件时，使用命令git rm删除文件</p>
+<ul>
+<li>git rm –cached readme1.txt 删除readme1.txt的跟踪，并保留在本地。</li>
+<li>git rm –f readme1.txt 删除readme1.txt的跟踪，并且删除本地文件。</li>
+</ul>
+</li>
+<li><p>每次用git status查看状态时总是列出未被跟踪的文件，可以通过.gitignore文件达到目的。</p>
+<p>编辑.gitignore文件，git会忽略文件中所列的文件和文件夹。如下。</p>
+</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;target</span><br><span class="line">&#x2F;.project</span><br><span class="line">&#x2F;.settings</span><br><span class="line">&#x2F;.classpath</span><br><span class="line">&#x2F;.idea</span><br><span class="line">&#x2F;.DS_Store</span><br><span class="line">*.iml</span><br><span class="line">&#x2F;src&#x2F;test&#x2F;java&#x2F;com&#x2F;alibaba&#x2F;json&#x2F;bvt&#x2F;parser&#x2F;autoType&#x2F;</span><br><span class="line">&#x2F;bin&#x2F;</span><br></pre></td></tr></table></figure>
+
+<p>   如果你不慎在创建.gitignore文件之前就push了项目，那么即使你在.gitignore文件中写入新的过滤规则，这些规则也不会起作用，Git仍然会对所有文件进行版本管理。</p>
+<p>   <strong>.gitignore只能忽略那些原来没有被track的文件，如果某些文件已经被纳入了版本管理中，则修改.gitignore是无效的。那么解决方法就是先把本地缓存删除（改变成未track状态），然后再提交：</strong></p>
+   <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">git rm -r --cached .</span><br><span class="line">git add .</span><br><span class="line">git commit -m 'update .gitignore'</span><br></pre></td></tr></table></figure>
+
+<h3 id="文件差异比较"><a href="#文件差异比较" class="headerlink" title="文件差异比较"></a>文件差异比较</h3><ul>
+<li>git diff  [文件名]<ul>
+<li>git diff test.txt  <code>将工作区中的文件和暂存区对应文件进行比较</code></li>
+</ul>
+</li>
+<li>将工作区中的文件和本地库历史记录比较<ul>
+<li>git diff HEAD test.txt  # 比较最新一次修改</li>
+<li>git diff HEAD^ text.txt # 比较上一次修改</li>
+<li>git diff 46e8eaa test.txt # 比较历史记录号为 46e8eaa的修改</li>
+</ul>
+</li>
+</ul>
+<h3 id="版本穿梭"><a href="#版本穿梭" class="headerlink" title="版本穿梭"></a>版本穿梭</h3><h4 id="查看日志"><a href="#查看日志" class="headerlink" title="查看日志"></a>查看日志</h4><ul>
+<li>git log 显示提交日志信息<ul>
+<li>git log –pretty=online</li>
+<li>git log –online</li>
+</ul>
+</li>
+<li>git reflog 显示的日志有助于帮助前进和后退版本</li>
+</ul>
+<h4 id="前进-后退版本"><a href="#前进-后退版本" class="headerlink" title="前进/后退版本"></a>前进/后退版本</h4><p>移动HEAD指针</p>
+<h5 id="基于索引值"><a href="#基于索引值" class="headerlink" title="基于索引值"></a>基于索引值</h5><p>git reset –hard 索引值的一部分（reflog中）</p>
+<h5 id="使用-、-（只能后退）"><a href="#使用-、-（只能后退）" class="headerlink" title="使用^、~（只能后退）"></a>使用^、~（只能后退）</h5><ul>
+<li>git reset –hard HEAD^ 回退一个版本</li>
+<li>git reset –hard HEAD~3 回退三个版本</li>
+</ul>
+<h5 id="reset命令的三个参数"><a href="#reset命令的三个参数" class="headerlink" title="reset命令的三个参数"></a>reset命令的三个参数</h5><ul>
+<li>–soft 仅仅在本地库移动指针</li>
+<li>–mixed 在本地库移动指针，重置暂存区</li>
+<li>–hard 在本地库移动指针，重置暂存区，重置工作区</li>
+</ul>
+<h5 id="删除文件找回"><a href="#删除文件找回" class="headerlink" title="删除文件找回"></a>删除文件找回</h5><p>前提：删除前，文件有提交</p>
+<ul>
+<li>git rm filename 使用git删除文件，并提交至暂存区</li>
+<li>git reset –hard xxxx 回退到之前的记录</li>
+</ul>
+<h2 id="四、分支"><a href="#四、分支" class="headerlink" title="四、分支"></a>四、分支</h2><p>查看分支</p>
+<ul>
+<li>git branch -v</li>
+</ul>
+<p>创建wvfc</p>
+<ul>
+<li>git branch xxxx</li>
+</ul>
+<p>切换分支</p>
+<ul>
+<li>git checkout 分支名</li>
+</ul>
+<p>合并分支</p>
+<ol>
+<li>切换至将要被合并的分支上，例如master</li>
+<li>git merge hot-fix 将指定分支合并到当前分支</li>
+</ol>
+<p>删除分支</p>
+<ul>
+<li>git branch -d 分支名</li>
+</ul>
+<h4 id="冲突解决"><a href="#冲突解决" class="headerlink" title="冲突解决"></a>冲突解决</h4><ul>
+<li>merge过程中产生冲突，会在文件内容中产生一些特殊符号，需要将这部分信息选择后删除特殊符号</li>
+<li>解决完后 git add</li>
+<li>然后 git commit，不加任何参数，标志冲突解决完成</li>
+</ul>
+<h3 id="强制覆盖分支"><a href="#强制覆盖分支" class="headerlink" title="强制覆盖分支"></a>强制覆盖分支</h3><p>使用git进行合作时，有时会建立很多的分支，当分支两两合并完，想将代码移到主分支上时，如果采用merge的方式，往往会有很多冲突。比较推荐的一种方法是将分支内容强制覆盖到主分支（前提是主分支里的东西不再需要），效果类似于清空主分支并将其它分支复制粘贴过去。</p>
+<ul>
+<li><p>方法一：git push origin test:master -f </p>
+</li>
+<li><p>方法二：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">git checkout master                          &#x2F;&#x2F;将当前分支切换到主分支</span><br><span class="line"></span><br><span class="line">git reset --hard test                            &#x2F;&#x2F;将主分支重置为test分支</span><br><span class="line"></span><br><span class="line">git push origin master -f             &#x2F;&#x2F;将重置后的master分支强制推送到远程仓库</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h2 id="五、远程仓库"><a href="#五、远程仓库" class="headerlink" title="五、远程仓库"></a>五、远程仓库</h2><h3 id="SSH免密配置"><a href="#SSH免密配置" class="headerlink" title="SSH免密配置"></a>SSH免密配置</h3><blockquote>
+<p>如果不使用SSH免密，在执行一次远程push后会发现不用再输入密码了。这是因为windows中的凭据管理器会记录登录凭据。但在其他系统下不是这样。设置SSH免密可省下每次推送都需要登录的麻烦。</p>
 </blockquote>
-<p>例子：某人要在商店使用<a href="https://zh.wikipedia.org/wiki/電子貨幣" target="_blank" rel="noopener">电子货币</a>购买100元的东西，当中至少包括两个操作：</p>
-<ol>
-<li>该人账户减少100元</li>
-<li>商店账户增加100元</li>
-</ol>
-<p><strong>支持事务的数据库管理系统</strong>（<strong>transactional DBMS</strong>）就是要确保以上两个操作（整个“事务”）都能完成，或一起取消；否则就会出现100元平白消失或出现的情况。</p>
-<p>在 MySQL 中，事务支持是在引擎层实现的。MySQL 是一个支持多引擎的系统，但并不是所有的引擎都支持事务。比如 MySQL 原生的 MyISAM 引擎就不支持事务，这也是 MyISAM 被 InnoDB 取代的重要原因之一。</p>
-<h3 id="事务的特性（ACID）"><a href="#事务的特性（ACID）" class="headerlink" title="事务的特性（ACID）"></a>事务的特性（ACID）</h3><ul>
-<li><strong>原子性</strong><br>　　事务必须是原子工作单元；对于其数据修改，要么全都执行，要么全都不执行。通常，与某个事务关联的操作具有共同的目标，并且是相互依赖的。如果系统只执行这些操作的一个子集，则可能会破坏事务的总体目标。原子性消除了系统处理操作子集的可能性。 </li>
-<li><strong>一致性</strong><br>　　 事务在完成时，必须使所有的数据都保持一致状态。在相关数据库中，所有规则都必须应用于事务的修改，以保持所有数据的完整性。事务结束时，所有的内部<a href="http://lib.csdn.net/base/datastructure" target="_blank" rel="noopener">数据结构</a>（如 B 树索引或双向链表）都必须是正确的。某些维护一致性的责任由应用程序开发人员承担，他们必须确保应用程序已强制所有已知的完整性约束。例如，当开发用于转帐的应用程序时，应避免在转帐过程中任意移动小数点。 </li>
-<li><strong>隔离性</strong><br>　　由并发事务所作的修改必须与任何其它并发事务所作的修改隔离。事务查看数据时数据所处的状态，要么是另一并发事务修改它之前的状态，要么是另一事务修改它之后的状态，事务不会查看中间状态的数据。这称为可串行性，因为它能够重新装载起始数据，并且重播一系列事务，以使数据结束时的状态与原始事务执行的状态相同。当事务可序列化时将获得最高的隔离级别。在此级别上，从一组可并行执行的事务获得的结果与通过连续运行每个事务所获得的结果相同。由于高度隔离会限制可并行执行的事务数，所以一些应用程序降低隔离级别以换取更大的吞吐量。  </li>
-<li><strong>持久性</strong><br>　　 事务完成之后，它对于系统的影响是永久性的。</li>
-</ul>
-<h2 id="二、隔离性与隔离级别"><a href="#二、隔离性与隔离级别" class="headerlink" title="二、隔离性与隔离级别"></a>二、隔离性与隔离级别</h2><h3 id="四种隔离级别"><a href="#四种隔离级别" class="headerlink" title="四种隔离级别"></a>四种隔离级别</h3><p>当数据库上有多个事务同时执行的时候，就可能出现脏读（dirty read）、不可重复读（non-repeatable read）、幻读（phantom read）的问题，为了解决这些问题，就有了“隔离级别”的概念。</p>
-<p>在谈隔离级别之前，你首先要知道，你隔离得越严实，效率就会越低。因此很多时候，我们都要在二者之间寻找一个平衡点。SQL 标准的事务隔离级别包括：读未提交（read uncommitted）、读提交（read committed）、可重复读（repeatable read）和串行化（serializable ）。</p>
-<ul>
-<li><strong>Read Uncommitted（读取未提交）</strong><br>在该隔离级别，所有事务都可以看到其他未提交事务的执行结果。本隔离级别很少用于实际应用，因为它的性能也不比其他级别好多少。读取未提交的数据，也被称之为脏读（Dirty Read）。</li>
-<li><strong>Read Committed（读取已提交）</strong><br>这是大多数数据库系统的默认隔离级别（但不是MySQL默认的）。它满足了隔离的简单定义：一个事务只能看见已经提交事务所做的改变。这种隔离级别 也支持所谓的不可重复读（Nonrepeatable Read），因为同一事务的其他实例在该实例处理其间可能会有新的commit，所以同一select可能返回不同结果。</li>
-<li><strong>Repeatable Read（可重读）</strong><br>这是MySQL的默认事务隔离级别，它确保同一事务的多个实例在并发读取数据时，会看到同样的数据行。不过理论上，这会导致另一个棘手的问题：幻读 （Phantom Read）。简单的说，幻读指当用户读取某一范围的数据行时，另一个事务又在该范围内插入了新行，当用户再读取该范围的数据行时，会发现有新的“幻影” 行。InnoDB和Falcon存储引擎通过多版本并发控制（MVCC，Multiversion Concurrency Control）机制解决了该问题。</li>
-<li><strong>Serializable（可串行化）</strong><br>这是最高的隔离级别，它通过强制事务排序，使之不可能相互冲突，从而解决幻读问题。简言之，它是在每个读的数据行上加上共享锁。在这个级别，可能导致大量的超时现象和锁竞争。</li>
-</ul>
-<p>由不同的隔离级别导致的问题如下：</p>
-<ul>
-<li><p><strong>脏读(Drity Read)</strong>：某个事务已更新一份数据，另一个事务在此时读取了同一份数据，由于某些原因，前一个RollBack了操作，则后一个事务所读取的数据就会是不正确的。</p>
+<h4 id="设置步骤"><a href="#设置步骤" class="headerlink" title="设置步骤"></a>设置步骤</h4><ol>
+<li><p>首先你需要确认一下自己是否已经拥有密钥了，默认情况下，用户的 SSH 密钥存储在其 <code>~/.ssh</code> 目录下。如果是Windows，则为C:\Users\用户名.ssh</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> <span class="built_in">cd</span> ~/.ssh</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> ls</span></span><br><span class="line">authorized_keys2  id_rsa       known_hosts</span><br><span class="line">config            id_rsa.pub</span><br></pre></td></tr></table></figure>
 </li>
-<li><p><strong>不可重复读(Non-repeatable read)</strong>：在一个事务的两次查询之中数据不一致，这可能是两次查询过程中间插入了一个事务更新的原有的数据。</p>
+<li><p>如果没有这些文件，则需要重新创建。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 邮箱可以随便填</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> ssh-keygen -t rsa -C <span class="string">"xx@xx.com"</span></span></span><br></pre></td></tr></table></figure>
+<p>默认会在上面所说的默认目录下生成<code>id_rsa</code>和<code>id_rsa.pub</code>两个文件</p>
 </li>
-<li><p><strong>幻读(Phantom Read)</strong>：在一个事务的两次查询中数据笔数不一致，例如有一个事务查询了几列(Row)数据，而另一个事务却在此时插入了新的几列数据，先前的事务在接下来的查询中，就会发现有几列数据是它先前所没有的。</p>
+<li><p>将ssh key添加到GitHub中</p>
 </li>
-</ul>
-<p>对应关系如图：</p>
-<img src="http://dl.iteye.com/upload/picture/pic/72610/af5b9c1e-4517-3df2-ad62-af25d1672d12.jpg" alt="img" style="zoom:67%;">
+<li><p>在Git的bash客户端创建SSH地址的别名映射(不能使用Https地址的别名映射推送)</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git remote add ssh远程库别名 ssh远程库地址</span><br></pre></td></tr></table></figure>
 
-<h3 id="事务隔离的实现（MySQL为例）"><a href="#事务隔离的实现（MySQL为例）" class="headerlink" title="事务隔离的实现（MySQL为例）"></a>事务隔离的实现（MySQL为例）</h3><p>在实现上，数据库里面会创建一个视图，访问的时候以视图的逻辑结果为准。在“可重复读”隔离级别下，这个视图是在事务启动时创建的，整个事务存在期间都用这个视图。在“读提交”隔离级别下，这个视图是在每个 SQL 语句开始执行的时候创建的。这里需要注意的是，“读未提交”隔离级别下直接返回记录上的最新值，没有视图概念；而“串行化”隔离级别下直接用加锁的方式来避免并行访问。我们可以看到在不同的隔离级别下，数据库行为是有所不同的。</p>
-<p><strong>Oracle 数据库的默认隔离级别是“读提交”，而MySQL数据库的默认隔离级别是“可重复读”。</strong>因此对于一些从 Oracle 迁移到 MySQL 的应用，为保证数据库隔离级别的一致，你一定要记得将 MySQL 的隔离级别设置为“读提交”。</p>
-<p>在 MySQL 中，实际上每条记录在更新的时候都会同时记录一条回滚操作。记录上的最新值，通过回滚操作，都可以得到前一个状态的值。假设一个值从 1 被按顺序改成了 2、3、4，在回滚日志里面就会有类似下面的记录：</p>
-<img src="https://static001.geekbang.org/resource/image/d9/ee/d9c313809e5ac148fc39feff532f0fee.png" alt="img" style="zoom:50%;">
-
-<p>当前值是 4，但是在查询这条记录的时候，不同时刻启动的事务会有不同的 read-view。如图中看到的，在视图 A、B、C 里面，这一个记录的值分别是 1、2、4，同一条记录在系统中可以存在多个版本，就是数据库的多版本并发控制（MVCC）。对于 read-view A，要得到 1，就必须将当前值依次执行图中所有的回滚操作得到。</p>
-<p>同时你会发现，即使现在有另外一个事务正在将 4 改成 5，这个事务跟 read-view A、B、C 对应的事务是不会冲突的。你一定会问，回滚日志总不能一直保留吧，什么时候删除呢？</p>
-<p>答案是，在不需要的时候才删除。也就是说，系统会判断，当没有事务再需要用到这些回滚日志时，回滚日志会被删除。什么时候才不需要了呢？就是当系统里没有比这个回滚日志更早的 read-view 的时候。</p>
-<p><strong>基于上面的说明，我们来讨论一下为什么建议你尽量不要使用长事务。</strong></p>
-<p>长事务意味着系统里面会存在很老的事务视图。由于这些事务随时可能访问数据库里面的任何数据，所以这个事务提交之前，数据库里面它可能用到的回滚记录都必须保留，这就会导致大量占用存储空间。</p>
-<p>在 MySQL 5.5 及以前的版本，回滚日志是跟数据字典一起放在 ibdata 文件里的，即使长事务最终提交，回滚段被清理，文件也不会变小。我见过数据只有 20GB，而回滚段有 200GB 的库。最终只好为了清理回滚段，重建整个库。除了对回滚段的影响，长事务还占用锁资源，也可能拖垮整个库，这个我们会在后面讲锁的时候展开。</p>
-<h2 id="三、数据库锁"><a href="#三、数据库锁" class="headerlink" title="三、数据库锁"></a>三、数据库锁</h2><blockquote>
-<p>数据库锁设计的初衷是处理并发问题。作为多用户共享的资源，当出现并发访问的时候，数据库需要合理地控制资源的访问规则。而锁就是用来实现这些访问规则的重要数据结构。</p>
-</blockquote>
-<p>数据库中锁的种类有很多，根据不同的划分标准，可以分为不同的种类，也因此衍生出了各种关于锁的专业名词，如果没捋清这其中的关系，很容易陷入术语的漩涡，最后弄得一头雾水。</p>
-<p>所以我在这里先摆张从网上找的关系图，先让大家对锁有个整体上的认识，不至于犯嘀咕。</p>
-<img src="http://raw.githubusercontent.com/IMWYY/AboutMyself/master/picBed/Screenshot1520500121.png" alt="img" style="zoom:100%;">
-
-<h3 id="悲观锁与乐观锁"><a href="#悲观锁与乐观锁" class="headerlink" title="悲观锁与乐观锁"></a>悲观锁与乐观锁</h3><p><strong>悲观锁</strong></p>
-<p>悲观锁，正如其名，它指的是对数据被外界（包括本系统当前的其他事务，以及来自外部系统的事务处理）修改持保守态度，因此，在整个数据处理过程中，将数据处于锁定状态。悲观锁的实现，往往依靠数据库提供的锁机制（也只有数据库层提供的锁机制才能真正保证数据访问的排他性，否则，即使在本系统中实现了加锁机制，也无法保证外部系统不会修改数据）。</p>
-<ol>
-<li><p>使用悲观锁，我们必须关闭mysql数据库的自动提交属性，采用手动提交事务的方式，因为MySQL默认使用autocommit模式，也就是说，当你执行一个更新操作后，MySQL会立刻将结果进行提交。</p>
-</li>
-<li><p>需要注意的是，在事务中，只有SELECT … FOR UPDATE 或LOCK IN SHARE MODE 同一笔数据时会等待其它事务结束后才执行，一般SELECT … 则不受此影响。对于UPDATE、DELETE和INSERT语句，InnoDB会自动给涉及数据集加排他锁（X)。</p>
-</li>
-<li><p>补充：MySQL中select…for update的Row Lock与Table Lock</p>
-<p>使用select…for update会把数据给锁住，不过我们需要注意一些锁的级别，MySQL InnoDB默认Row-Level Lock，所以只有明确地指定主键（或有索引的地方），MySQL 才会执行Row lock (只锁住被选取的数据) ，否则MySQL 将会执行Table Lock (将整个数据表单给锁住)。</p>
 </li>
 </ol>
-<p><strong>乐观锁</strong></p>
-<p>乐观锁（ Optimistic Locking ） 相对悲观锁而言，乐观锁假设认为数据一般情况下不会造成冲突，所以在数据进行提交更新的时候，才会正式对数据的冲突与否进行检测，如果发现冲突了，则让返回用户错误的信息，让用户决定如何去做（<strong>一般是回滚事务</strong>）。那么我们如何实现乐观锁呢，一般来说有以下2种方式：</p>
-<ol>
-<li>使用数据版本（Version）记录机制实现，这是乐观锁最常用的一种实现方式。何谓数据版本？即为数据增加一个版本标识，一般是通过为数据库表增加一个数字类型的 “version” 字段来实现。当读取数据时，将version字段的值一同读出，数据每更新一次，对此version值加一。当我们提交更新的时候，判断数据库表对应记录的当前版本信息与第一次取出来的version值进行比对，如果数据库表当前版本号与第一次取出来的version值相等，则予以更新，否则认为是过期数据。</li>
-<li>乐观锁定的第二种实现方式和第一种差不多，同样是在需要乐观锁控制的table中增加一个字段，名称无所谓，字段类型使用时间戳（timestamp）, 和上面的version类似，也是在更新提交的时候检查当前数据库中数据的时间戳和自己更新前取到的时间戳进行对比，如果一致则OK，否则就是版本冲突。</li>
-</ol>
-<p><strong>总结：</strong></p>
-<p>两种锁各有优缺点，不可认为一种好于另一种，像乐观锁适用于写比较少的情况下，即冲突真的很少发生的时候，这样可以省去了锁的开销，加大了系统的整个吞吐量。但如果经常产生冲突，上层应用会不断的进行retry，这样反倒是降低了性能，所以这种情况下用悲观锁就比较合适。</p>
-<p>另外，高并发情况下个人认为乐观锁要好于悲观锁，因为悲观锁的机制使得各个线程等待时间过长，极其影响效率，乐观锁可以在一定程度上提高并发度。</p>
-<h3 id="共享锁与排他锁"><a href="#共享锁与排他锁" class="headerlink" title="共享锁与排他锁"></a>共享锁与排他锁</h3><p>共享锁（又称<strong>读锁</strong>）、排它锁（又称<strong>写锁</strong>）。</p>
-<p><strong>共享锁（S）</strong></p>
-<ul>
-<li><p>加锁与解锁：当一个事务执行select语句时，数据库系统会为这个事务分配一把共享锁，来锁定被查询的数据。在默认情况下，数据被读取后，数据库系统立即解除共享锁。例如，当一个事务执行查询“SELECT * FROM accounts”语句时，数据库系统首先锁定第一行，读取之后，解除对第一行的锁定，然后锁定第二行。这样，在一个事务读操作过程中，允许其他事务同时更新accounts表中未锁定的行。</p>
+<h3 id="管理远程仓库别名"><a href="#管理远程仓库别名" class="headerlink" title="管理远程仓库别名"></a>管理远程仓库别名</h3><ul>
+<li><p>git remote -v    查看所有别名</p>
 </li>
-<li><p>兼容性：如果数据资源上放置了共享锁，还能再放置共享锁和更新锁。</p>
-</li>
-<li><p>并发性能：具有良好的并发性能，当数据被放置共享锁后，还可以再放置共享锁或更新锁。所以并发性能很好。</p>
-</li>
-</ul>
-<p><strong>排他锁（X）</strong></p>
-<ul>
-<li><p>加锁与解锁：当一个事务执行insert、update、select … for update或delete语句时，数据库系统会自动对SQL语句操纵的数据资源使用独占锁。如果该数据资源已经有其他锁（任何锁）存在时，就无法对其再放置独占锁了。</p>
-</li>
-<li><p>兼容性：独占锁不能和其他锁兼容，如果数据资源上已经加了独占锁，就不能再放置其他的锁了。同样，如果数据资源上已经放置了其他锁，那么也就不能再放置独占锁了。</p>
-</li>
-<li><p>并发性能：最差。只允许一个事务访问锁定的数据，如果其他事务也需要访问该数据，就必须等待。</p>
-</li>
-</ul>
-<h3 id="意向锁"><a href="#意向锁" class="headerlink" title="意向锁"></a>意向锁</h3><p>知乎上有个解释十分形象，如下：</p>
-<ol>
-<li><p>在MySQL中有表锁，读锁锁表，会阻塞其他事务修改表数据。写锁锁表，会阻塞其他事务读和写。</p>
-</li>
-<li><p>InnoDB引擎又支持行锁，行锁分为共享锁，一个事务对一行的共享只读锁。排它锁，一个事务对一行的排他读写锁。</p>
-</li>
-<li><p>这两种类型的锁共存的问题。考虑这个例子：事务A锁住了表中的一行，让这一行只能读，不能写。之后，事务B申请整个表的写锁。如果事务B申请成功，那么理论上它就能修改表中的任意一行，这与A持有的行锁是冲突的。数据库需要避免这种冲突，就是说要让B的申请被阻塞，直到A释放了行锁。</p>
-</li>
-</ol>
-<p>数据库要怎么判断这个冲突呢？</p>
-<ul>
-<li>step1：判断表是否已被其他事务用表锁锁表</li>
-<li>step2：判断表中的每一行是否已被行锁锁住。</li>
-</ul>
-<p>注意step2，这样的判断方法效率实在不高，因为需要遍历整个表。于是就有了意向锁。在意向锁存在的情况下，事务A必须先申请表的意向共享锁，成功后再申请一行的行锁。</p>
-<p>在意向锁存在的情况下，上面的判断可以改成</p>
-<ul>
-<li>step1：不变</li>
-<li>step2：发现表上有意向共享锁，说明表中有些行被共享行锁锁住了，因此，事务B申请表的写锁会被阻塞。</li>
-</ul>
-<p>注意：申请意向锁的动作是数据库完成的，就是说，事务A申请一行的行锁的时候，数据库会自动先开始申请表的意向锁，不需要我们程序员使用代码来申请。</p>
-<h3 id="怎么减少行锁对性能的影响？"><a href="#怎么减少行锁对性能的影响？" class="headerlink" title="怎么减少行锁对性能的影响？"></a>怎么减少行锁对性能的影响？</h3><p>先给你举个例子。在下面的操作序列中，事务 B 的 update 语句执行时会是什么现象呢？假设字段 id 是表 t 的主键。</p>
-<img src="https://static001.geekbang.org/resource/image/51/10/51f501f718e420244b0a2ec2ce858710.jpg" alt="img" style="zoom:50%;">
+<li><p>git remote add 别名 地址</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git remote add dust https://github.com/MaKunPeng/Dust.git</span><br></pre></td></tr></table></figure>
 
-<p>这个问题的结论取决于事务 A 在执行完两条 update 语句后，持有哪些锁，以及在什么时候释放。你可以验证一下：实际上事务 B 的 update 语句会被阻塞，直到事务 A 执行 commit 之后，事务 B 才能继续执行。</p>
-<p>知道了这个答案，你一定知道了事务 A 持有的两个记录的行锁，都是在 <strong>commit 的时候才释放的</strong>。</p>
-<p>也就是说，<strong>在 InnoDB 事务中，行锁是在需要的时候才加上的，但并不是不需要了就立刻释放，而是要等到事务结束时才释放。这个就是两阶段锁协议</strong>。</p>
-<p>知道了这个设定，对我们使用事务有什么帮助呢？那就是，<strong>如果你的事务中需要锁多个行，要把最可能造成锁冲突、最可能影响并发度的锁尽量往后放</strong>。</p>
-<h3 id="死锁和死锁检测"><a href="#死锁和死锁检测" class="headerlink" title="死锁和死锁检测"></a>死锁和死锁检测</h3><p>当并发系统中不同线程出现循环资源依赖，涉及的线程都在等待别的线程释放资源时，就会导致这几个线程都进入无限等待的状态，称为死锁。这里我用数据库中的行锁举个例子。</p>
-<img src="https://static001.geekbang.org/resource/image/4d/52/4d0eeec7b136371b79248a0aed005a52.jpg" alt="img" style="zoom:50%;">
-
-<p>这时候，事务 A 在等待事务 B 释放 id=2 的行锁，而事务 B 在等待事务 A 释放 id=1 的行锁。 事务 A 和事务 B 在互相等待对方的资源释放，就是进入了死锁状态。当出现死锁以后，有两种策略：</p>
-<ul>
-<li>一种策略是，直接进入等待，直到超时。这个超时时间可以通过参数 innodb_lock_wait_timeout 来设置。</li>
-<li>另一种策略是，发起死锁检测，发现死锁后，主动回滚死锁链条中的某一个事务，让其他事务得以继续执行。将参数 innodb_deadlock_detect 设置为 on，表示开启这个逻辑。</li>
-</ul>
-<p>在 InnoDB 中，innodb_lock_wait_timeout 的默认值是 50s，意味着如果采用第一个策略，当出现死锁以后，第一个被锁住的线程要过 50s 才会超时退出，然后其他线程才有可能继续执行。对于在线服务来说，这个等待时间往往是无法接受的。</p>
-<p>但是，我们又不可能直接把这个时间设置成一个很小的值，比如 1s。这样当出现死锁的时候，确实很快就可以解开，但如果不是死锁，而是简单的锁等待呢？所以，超时时间设置太短的话，会出现很多误伤。</p>
-<p>所以，正常情况下我们还是要采用第二种策略，即：<strong>主动死锁检测</strong>，而且 innodb_deadlock_detect 的默认值本身就是 on。主动死锁检测在发生死锁的时候，是能够快速发现并进行处理的，但是它也是有额外负担的。</p>
-<p>你可以想象一下这个过程：</p>
-<p>每当一个事务被锁的时候，就要看看它所依赖的线程有没有被别人锁住，如此循环，最后判断是否出现了循环等待，也就是死锁。那如果是我们上面说到的所有事务都要更新同一行的场景呢？每个新来的被堵住的线程，都要判断会不会由于自己的加入导致了死锁，这是一个时间复杂度是 O(n) 的操作。</p>
-<p>假设有 1000 个并发线程要同时更新同一行，那么死锁检测操作就是 100 万这个量级的。虽然最终检测的结果是没有死锁，但是这期间要消耗大量的 CPU 资源。因此，你就会看到 CPU 利用率很高，但是每秒却执行不了几个事务。根据上面的分析，我们来讨论一下，怎么解决由这种热点行更新导致的性能问题呢？问题的症结在于，死锁检测要耗费大量的 CPU 资源。</p>
-<p><strong>解决方案</strong></p>
-<ul>
-<li><p>一种头痛医头的方法，就是如果你能确保这个业务一定不会出现死锁，可以临时把死锁检测关掉。但是这种操作本身带有一定的风险，因为业务设计的时候一般不会把死锁当做一个严重错误，毕竟出现死锁了，就回滚，然后通过业务重试一般就没问题了，这是业务无损的。而关掉死锁检测意味着可能会出现大量的超时，这是业务有损的。</p>
-</li>
-<li><p>另一个思路是控制并发度。根据上面的分析，你会发现如果并发能够控制住，比如同一行同时最多只有 10 个线程在更新，那么死锁检测的成本很低，就不会出现这个问题。一个直接的想法就是，在客户端做并发控制。但是，你会很快发现这个方法不太可行，因为客户端很多。我见过一个应用，有 600 个客户端，这样即使每个客户端控制到只有 5 个并发线程，汇总到数据库服务端以后，峰值并发数也可能要达到 3000。</p>
-<p>因此，这个并发控制要做在数据库服务端。如果你有中间件，可以考虑在中间件实现；如果你的团队有能修改 MySQL 源码的人，也可以做在 MySQL 里面。基本思路就是，对于相同行的更新，在进入引擎之前排队。这样在 InnoDB 内部就不会有大量的死锁检测工作了。</p>
-</li>
-<li><p>可以考虑通过将一行改成逻辑上的多行来减少锁冲突。还是以影院账户为例，可以考虑放在多条记录上，比如 10 个记录，影院的账户总额等于这 10 个记录的值的总和。这样每次要给影院账户加金额的时候，随机选其中一条记录来加。这样每次冲突概率变成原来的 1/10，可以减少锁等待个数，也就减少了死锁检测的 CPU 消耗。这个方案看上去是无损的，但其实这类方案需要根据业务逻辑做详细设计。如果账户余额可能会减少，比如退票逻辑，那么这时候就需要考虑当一部分行记录变成 0 的时候，代码要有特殊处理。</p>
 </li>
 </ul>
+<h3 id="推送"><a href="#推送" class="headerlink" title="推送"></a>推送</h3><ul>
+<li>git push origin master</li>
+</ul>
+<h4 id="强制推送"><a href="#强制推送" class="headerlink" title="强制推送"></a>强制推送</h4><p>无视冲突，完全合并。假设有一个分支test，要将这个分支的内容完全覆盖掉主分支master</p>
+<p>git push origin test:master–force</p>
+<h3 id="邀请成员加入团队"><a href="#邀请成员加入团队" class="headerlink" title="邀请成员加入团队"></a>邀请成员加入团队</h3><p><img src="/2020/05/13/Git%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3%20-%20%E5%9F%BA%E6%9C%AC%E6%93%8D%E4%BD%9C%E6%8C%87%E5%8D%97/%E9%82%80%E8%AF%B7%E6%88%90%E5%91%98%E5%8A%A0%E5%85%A5%E5%9B%A2%E9%98%9F.png" alt="image-20200413020055090"></p>
+<p>然后复制邀请地址，发送给被邀请人，被邀请人打开链接，点击接收，完成。</p>
+<h3 id="拉取"><a href="#拉取" class="headerlink" title="拉取"></a>拉取</h3><p>pull = fetch + merge</p>
+<ul>
+<li>git fetch origin master</li>
+</ul>
+<p>fetch只是将远程仓库中的文件下载至本地，但并没有改本地<code>工作区</code>中的文件，如果想要查看从远程仓库下载下来的文件，可执行</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git checkout orgin&#x2F;master #切换到远程仓库的分支，这时就可以查看了</span><br></pre></td></tr></table></figure>
 
+<p>然后再进行merge</p>
+<ul>
+<li>git merge origin/master</li>
+</ul>
+<p>当然也可以直接使用pull</p>
+<ul>
+<li>git pull  origin master</li>
+</ul>
+<h3 id="跨团队操作"><a href="#跨团队操作" class="headerlink" title="跨团队操作"></a>跨团队操作</h3><h4 id="fork"><a href="#fork" class="headerlink" title="fork"></a>fork</h4><p>其他团队成员先在github上fork项目</p>
+<h4 id="发起pull-requests"><a href="#发起pull-requests" class="headerlink" title="发起pull requests"></a>发起pull requests</h4><p>在github上点击pull requests</p>
+<p><img src="/2020/05/13/Git%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3%20-%20%E5%9F%BA%E6%9C%AC%E6%93%8D%E4%BD%9C%E6%8C%87%E5%8D%97/%E5%8F%91%E8%B5%B7pullrequest.png" alt="image-20200413021931045"></p>
+<h4 id="审核pull-requests"><a href="#审核pull-requests" class="headerlink" title="审核pull requests"></a>审核pull requests</h4><p>同样点击pull requests</p>
+<p>可以点击files changed查看修改，然后merge</p>
+<h3 id="Win10凭据管理"><a href="#Win10凭据管理" class="headerlink" title="Win10凭据管理"></a>Win10凭据管理</h3><p>如果不用ssh免密登陆的话，git是不会记住https方式的用户名和密码的。</p>
+<p>Win10自带的凭据管理器会记住，所以第二次操作时就不用输入了。</p>
+<h2 id="六、问题解决"><a href="#六、问题解决" class="headerlink" title="六、问题解决"></a>六、问题解决</h2><h3 id="SSH免密"><a href="#SSH免密" class="headerlink" title="SSH免密"></a>SSH免密</h3><p>ssh免密生成密钥用的邮箱一定是github登录邮箱，同时，git config –gobal user.email中设置也必须是同一个邮箱。</p>
+<h3 id="push报错"><a href="#push报错" class="headerlink" title="push报错"></a>push报错</h3><p><a href="https://blog.csdn.net/u012145252/article/details/80628451" target="_blank" rel="noopener">https://blog.csdn.net/u012145252/article/details/80628451</a></p>
+<p><code>fatal: refusing to merge unrelated histories</code></p>
+<p>出现这个问题的最主要原因还是在于本地仓库和远程仓库实际上是独立的两个仓库。假如我之前是直接clone的方式在本地建立起远程github仓库的克隆本地仓库就不会有这问题了。</p>
+<p>可以在pull命令后紧接着使用<em>–allow-unrelated-histories</em>选项来解决问题（该选项可以合并两个独立启动仓库的历史）。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git pull origin master --allow-unrelated-histories</span><br></pre></td></tr></table></figure>
       
     </div>
     
@@ -575,7 +620,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="http://makunpeng.github.io/2019/12/01/%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E9%94%81/" title="数据库 - 事务隔离与数据库锁">http://makunpeng.github.io/2019/12/01/%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E9%94%81/</a>
+    <a href="http://makunpeng.github.io/2020/05/13/Git%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3%20-%20%E5%9F%BA%E6%9C%AC%E6%93%8D%E4%BD%9C%E6%8C%87%E5%8D%97/" title="Git技术文档 - 基本操作指南">http://makunpeng.github.io/2020/05/13/Git%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3%20-%20%E5%9F%BA%E6%9C%AC%E6%93%8D%E4%BD%9C%E6%8C%87%E5%8D%97/</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>
@@ -590,7 +635,9 @@
       
         <div class="post-tags">
           
-            <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/" rel="tag"># 数据库</a>
+            <a href="/tags/Git/" rel="tag"># Git</a>
+          
+            <a href="/tags/%E7%89%88%E6%9C%AC%E6%8E%A7%E5%88%B6/" rel="tag"># 版本控制</a>
           
         </div>
       
@@ -603,8 +650,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2018/05/13/DelayQueue%EF%BC%88%E5%BB%B6%E8%BF%9F%E9%98%9F%E5%88%97%EF%BC%89/" rel="next" title="Java阻塞队列 - DelayQueue（延迟队列）">
-                <i class="fa fa-chevron-left"></i> Java阻塞队列 - DelayQueue（延迟队列）
+              <a href="/2019/12/01/%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E9%94%81/" rel="next" title="数据库 - 事务隔离与数据库锁">
+                <i class="fa fa-chevron-left"></i> 数据库 - 事务隔离与数据库锁
               </a>
             
           </div>
@@ -613,8 +660,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/2020/05/13/Git%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3%20-%20%E5%9F%BA%E6%9C%AC%E6%93%8D%E4%BD%9C%E6%8C%87%E5%8D%97/" rel="prev" title="Git技术文档 - 基本操作指南">
-                Git技术文档 - 基本操作指南 <i class="fa fa-chevron-right"></i>
+              <a href="/2020/07/29/%E4%BB%8ETop-K%E7%AE%97%E6%B3%95%E9%97%AE%E9%A2%98%E5%85%A5%E6%89%8B%EF%BC%8C%E5%BD%BB%E5%BA%95%E6%8E%8C%E6%8F%A1%E5%A0%86-Heap-%E7%BB%93%E6%9E%84/" rel="prev" title="从Top K算法问题入手，彻底掌握堆(Heap)结构">
+                从Top K算法问题入手，彻底掌握堆(Heap)结构 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -764,7 +811,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#一、什么是事务？"><span class="nav-number">1.</span> <span class="nav-text">一、什么是事务？</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#事务的特性（ACID）"><span class="nav-number">1.1.</span> <span class="nav-text">事务的特性（ACID）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#二、隔离性与隔离级别"><span class="nav-number">2.</span> <span class="nav-text">二、隔离性与隔离级别</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#四种隔离级别"><span class="nav-number">2.1.</span> <span class="nav-text">四种隔离级别</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#事务隔离的实现（MySQL为例）"><span class="nav-number">2.2.</span> <span class="nav-text">事务隔离的实现（MySQL为例）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#三、数据库锁"><span class="nav-number">3.</span> <span class="nav-text">三、数据库锁</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#悲观锁与乐观锁"><span class="nav-number">3.1.</span> <span class="nav-text">悲观锁与乐观锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#共享锁与排他锁"><span class="nav-number">3.2.</span> <span class="nav-text">共享锁与排他锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#意向锁"><span class="nav-number">3.3.</span> <span class="nav-text">意向锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#怎么减少行锁对性能的影响？"><span class="nav-number">3.4.</span> <span class="nav-text">怎么减少行锁对性能的影响？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#死锁和死锁检测"><span class="nav-number">3.5.</span> <span class="nav-text">死锁和死锁检测</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#一、架构"><span class="nav-number">1.</span> <span class="nav-text">一、架构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#二、本地库和远程库"><span class="nav-number">2.</span> <span class="nav-text">二、本地库和远程库</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#本团队协作"><span class="nav-number">2.1.</span> <span class="nav-text">本团队协作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#跨团队协作"><span class="nav-number">2.2.</span> <span class="nav-text">跨团队协作</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#三、操作"><span class="nav-number">3.</span> <span class="nav-text">三、操作</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#本地库初始化"><span class="nav-number">3.1.</span> <span class="nav-text">本地库初始化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#设置签名"><span class="nav-number">3.2.</span> <span class="nav-text">设置签名</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#查看设置"><span class="nav-number">3.2.1.</span> <span class="nav-text">查看设置</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#暂存、提交、删除"><span class="nav-number">3.3.</span> <span class="nav-text">暂存、提交、删除</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#取消暂存文件"><span class="nav-number">3.3.1.</span> <span class="nav-text">取消暂存文件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#取消对文件的版本追踪"><span class="nav-number">3.3.2.</span> <span class="nav-text">取消对文件的版本追踪</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#文件差异比较"><span class="nav-number">3.4.</span> <span class="nav-text">文件差异比较</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#版本穿梭"><span class="nav-number">3.5.</span> <span class="nav-text">版本穿梭</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#查看日志"><span class="nav-number">3.5.1.</span> <span class="nav-text">查看日志</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#前进-后退版本"><span class="nav-number">3.5.2.</span> <span class="nav-text">前进&#x2F;后退版本</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#基于索引值"><span class="nav-number">3.5.2.1.</span> <span class="nav-text">基于索引值</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#使用-、-（只能后退）"><span class="nav-number">3.5.2.2.</span> <span class="nav-text">使用^、~（只能后退）</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#reset命令的三个参数"><span class="nav-number">3.5.2.3.</span> <span class="nav-text">reset命令的三个参数</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#删除文件找回"><span class="nav-number">3.5.2.4.</span> <span class="nav-text">删除文件找回</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#四、分支"><span class="nav-number">4.</span> <span class="nav-text">四、分支</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#冲突解决"><span class="nav-number">4.0.1.</span> <span class="nav-text">冲突解决</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#强制覆盖分支"><span class="nav-number">4.1.</span> <span class="nav-text">强制覆盖分支</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#五、远程仓库"><span class="nav-number">5.</span> <span class="nav-text">五、远程仓库</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#SSH免密配置"><span class="nav-number">5.1.</span> <span class="nav-text">SSH免密配置</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#设置步骤"><span class="nav-number">5.1.1.</span> <span class="nav-text">设置步骤</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#管理远程仓库别名"><span class="nav-number">5.2.</span> <span class="nav-text">管理远程仓库别名</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#推送"><span class="nav-number">5.3.</span> <span class="nav-text">推送</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#强制推送"><span class="nav-number">5.3.1.</span> <span class="nav-text">强制推送</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#邀请成员加入团队"><span class="nav-number">5.4.</span> <span class="nav-text">邀请成员加入团队</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#拉取"><span class="nav-number">5.5.</span> <span class="nav-text">拉取</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#跨团队操作"><span class="nav-number">5.6.</span> <span class="nav-text">跨团队操作</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#fork"><span class="nav-number">5.6.1.</span> <span class="nav-text">fork</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#发起pull-requests"><span class="nav-number">5.6.2.</span> <span class="nav-text">发起pull requests</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#审核pull-requests"><span class="nav-number">5.6.3.</span> <span class="nav-text">审核pull requests</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Win10凭据管理"><span class="nav-number">5.7.</span> <span class="nav-text">Win10凭据管理</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#六、问题解决"><span class="nav-number">6.</span> <span class="nav-text">六、问题解决</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#SSH免密"><span class="nav-number">6.1.</span> <span class="nav-text">SSH免密</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#push报错"><span class="nav-number">6.2.</span> <span class="nav-text">push报错</span></a></li></ol></li></ol></div>
             
 
           </div>
